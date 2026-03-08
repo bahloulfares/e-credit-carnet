@@ -1,0 +1,207 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/api_service.dart';
+import '../models/transaction_model.dart';
+import 'auth_provider.dart';
+
+// Transaction list state notifier
+final transactionListProvider =
+    StateNotifierProvider.family<
+      TransactionListNotifier,
+      TransactionListState,
+      String?
+    >((ref, clientId) {
+      final transactionService = ref.watch(transactionServiceProvider);
+      return TransactionListNotifier(transactionService, clientId);
+    });
+
+// Single transaction provider
+final transactionDetailsProvider = FutureProvider.family<Transaction, String>((
+  ref,
+  transactionId,
+) async {
+  final transactionService = ref.watch(transactionServiceProvider);
+  return transactionService.getTransactionById(transactionId);
+});
+
+class TransactionListState {
+  final List<Transaction> transactions;
+  final bool isLoading;
+  final String? error;
+  final int currentPage;
+  final bool hasMore;
+
+  TransactionListState({
+    this.transactions = const [],
+    this.isLoading = false,
+    this.error,
+    this.currentPage = 0,
+    this.hasMore = true,
+  });
+
+  TransactionListState copyWith({
+    List<Transaction>? transactions,
+    bool? isLoading,
+    String? error,
+    bool clearError = false,
+    int? currentPage,
+    bool? hasMore,
+  }) {
+    return TransactionListState(
+      transactions: transactions ?? this.transactions,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+      currentPage: currentPage ?? this.currentPage,
+      hasMore: hasMore ?? this.hasMore,
+    );
+  }
+}
+
+class TransactionListNotifier extends StateNotifier<TransactionListState> {
+  final TransactionService transactionService;
+  final String? clientId;
+
+  TransactionListNotifier(this.transactionService, this.clientId)
+    : super(TransactionListState()) {
+    loadTransactions();
+  }
+
+  Future<void> loadTransactions({bool refresh = false}) async {
+    if (state.isLoading && !refresh) return;
+    if (!refresh && !state.hasMore) return;
+
+    state = state.copyWith(
+      isLoading: true,
+      clearError: true,
+      currentPage: refresh ? 0 : state.currentPage,
+    );
+    try {
+      final page = refresh ? 0 : state.currentPage;
+      final transactions = await transactionService.getTransactions(
+        clientId: clientId,
+        skip: page * 20,
+        take: 20,
+      );
+
+      if (refresh) {
+        state = state.copyWith(
+          transactions: transactions,
+          isLoading: false,
+          currentPage: 0,
+          hasMore: transactions.length == 20,
+        );
+      } else {
+        state = state.copyWith(
+          transactions: [...state.transactions, ...transactions],
+          isLoading: false,
+          currentPage: page + 1,
+          hasMore: transactions.length == 20,
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+    }
+  }
+
+  Future<void> createTransaction({
+    required String clientId,
+    required String type,
+    required double amount,
+    String? description,
+    DateTime? dueDate,
+    String? paymentMethod,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final newTransaction = await transactionService.createTransaction(
+        clientId: clientId,
+        type: type,
+        amount: amount,
+        description: description,
+        dueDate: dueDate,
+        paymentMethod: paymentMethod,
+      );
+      state = state.copyWith(
+        transactions: [newTransaction, ...state.transactions],
+        isLoading: false,
+      );
+      // Auto-refresh pour mettre à jour les stats du client
+      await loadTransactions(refresh: true);
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+      rethrow;
+    }
+  }
+
+  Future<void> updateTransaction(
+    String transactionId, {
+    String? description,
+    DateTime? dueDate,
+    String? paymentMethod,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final updatedTransaction = await transactionService.updateTransaction(
+        transactionId,
+        description: description,
+        dueDate: dueDate,
+        paymentMethod: paymentMethod,
+      );
+
+      final updatedTransactions = state.transactions.map((t) {
+        return t.id == transactionId ? updatedTransaction : t;
+      }).toList();
+
+      state = state.copyWith(
+        transactions: updatedTransactions,
+        isLoading: false,
+      );
+      // Auto-refresh pour synchroniser les stats
+      await loadTransactions(refresh: true);
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+      rethrow;
+    }
+  }
+
+  Future<void> markAsPaid(String transactionId, {String? paymentMethod}) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final paidTransaction = await transactionService.markAsPaid(
+        transactionId,
+        paymentMethod: paymentMethod,
+      );
+
+      final updatedTransactions = state.transactions.map((t) {
+        return t.id == transactionId ? paidTransaction : t;
+      }).toList();
+
+      state = state.copyWith(
+        transactions: updatedTransactions,
+        isLoading: false,
+      );
+      // Auto-refresh pour mettre à jour les stats du client
+      await loadTransactions(refresh: true);
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+      rethrow;
+    }
+  }
+
+  Future<void> deleteTransaction(String transactionId) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await transactionService.deleteTransaction(transactionId);
+      state = state.copyWith(
+        transactions: state.transactions
+            .where((t) => t.id != transactionId)
+            .toList(),
+        isLoading: false,
+      );
+      // Auto-refresh pour synchroniser la pagination
+      await loadTransactions(refresh: true);
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+      rethrow;
+    }
+  }
+}

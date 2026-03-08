@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: procreditapp-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci ; npx prisma generate ; npm run build
+    startCommand: npx prisma migrate deploy ; npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRATION
+        value: 7d
+      - key: BCRYPT_ROUNDS
+        value: 10
+      - key: CORS_ORIGIN
+        sync: false

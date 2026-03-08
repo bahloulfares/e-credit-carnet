@@ -1,0 +1,254 @@
+import { PrismaClient, Transaction, Prisma, TransactionType } from '@prisma/client';
+import { ApiError } from '../utils/errors';
+
+const prisma = new PrismaClient();
+
+type TransactionWithClient = Transaction & {
+  client?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+  };
+};
+
+export class TransactionService {
+  async createTransaction(
+    userId: string,
+    clientId: string,
+    data: {
+      type: TransactionType;
+      amount: number | string;
+      description?: string;
+      dueDate?: Date;
+      paymentMethod?: string;
+    },
+  ): Promise<Transaction> {
+    // Verify client exists
+    const client = await prisma.client.findFirst({
+      where: {
+        id: clientId,
+        userId,
+      },
+    });
+
+    if (!client) {
+      throw new ApiError(404, 'Client not found');
+    }
+
+    const transaction = await prisma.transaction.create({
+      data: {
+        userId,
+        clientId,
+        type: data.type,
+        amount: new Prisma.Decimal(data.amount.toString()),
+        description: data.description,
+        dueDate: data.dueDate,
+        paymentMethod: data.paymentMethod,
+      },
+    });
+
+    // Update client stats
+    await this.updateClientStats(userId, clientId);
+
+    // Create pending sync for offline-first
+    await prisma.pendingSync.create({
+      data: {
+        userId,
+        entityType: 'transaction',
+        entityId: transaction.id,
+        operationType: 'CREATE',
+        data: transaction,
+        transactionId: transaction.id,
+      },
+    });
+
+    return transaction;
+  }
+
+  async getTransactionById(
+    transactionId: string,
+    userId: string,
+  ): Promise<TransactionWithClient | null> {
+    return prisma.transaction.findFirst({
+      where: {
+        id: transactionId,
+        userId,
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+      },
+    });
+  }
+
+  async listTransactions(
+    userId: string,
+    clientId?: string,
+    options?: { skip?: number; take?: number },
+  ): Promise<TransactionWithClient[]> {
+    return prisma.transaction.findMany({
+      where: {
+        userId,
+        clientId,
+        deletedAt: null,
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+      },
+      skip: options?.skip,
+      take: options?.take,
+      orderBy: { transactionDate: 'desc' },
+    });
+  }
+
+  async getClientTransactions(
+    userId: string,
+    clientId: string,
+    options?: { skip?: number; take?: number },
+  ): Promise<TransactionWithClient[]> {
+    return this.listTransactions(userId, clientId, options);
+  }
+
+  async updateTransaction(
+    transactionId: string,
+    userId: string,
+    data: Partial<
+      Omit<Transaction, 'id' | 'userId' | 'clientId' | 'createdAt' | 'updatedAt' | 'deletedAt'>
+    >,
+  ): Promise<Transaction> {
+    const transaction = await this.getTransactionById(transactionId, userId);
+
+    if (!transaction) {
+      throw new ApiError(404, 'Transaction not found');
+    }
+
+    const updated = await prisma.transaction.update({
+      where: { id: transactionId },
+      data,
+    });
+
+    // Update client stats
+    await this.updateClientStats(userId, transaction.clientId);
+
+    // Create pending sync
+    await prisma.pendingSync.create({
+      data: {
+        userId,
+        entityType: 'transaction',
+        entityId: transactionId,
+        operationType: 'UPDATE',
+        data: updated,
+        transactionId,
+      },
+    });
+
+    return updated;
+  }
+
+  async deleteTransaction(transactionId: string, userId: string): Promise<Transaction> {
+    const transaction = await this.getTransactionById(transactionId, userId);
+
+    if (!transaction) {
+      throw new ApiError(404, 'Transaction not found');
+    }
+
+    const deleted = await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+
+    // Update client stats
+    await this.updateClientStats(userId, transaction.clientId);
+
+    // Create pending sync
+    await prisma.pendingSync.create({
+      data: {
+        userId,
+        entityType: 'transaction',
+        entityId: transactionId,
+        operationType: 'DELETE',
+        data: deleted,
+        transactionId,
+      },
+    });
+
+    return deleted;
+  }
+
+  async markAsPaid(
+    transactionId: string,
+    userId: string,
+    paymentMethod?: string,
+  ): Promise<Transaction> {
+    const transaction = await this.getTransactionById(transactionId, userId);
+
+    if (!transaction) {
+      throw new ApiError(404, 'Transaction not found');
+    }
+
+    if (transaction.type !== 'CREDIT') {
+      throw new ApiError(400, 'Only credit transactions can be marked as paid');
+    }
+
+    const updated = await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        isPaid: true,
+        paidAt: new Date(),
+        paymentMethod,
+      },
+    });
+
+    // Update client stats
+    await this.updateClientStats(userId, transaction.clientId);
+
+    return updated;
+  }
+
+  private async updateClientStats(userId: string, clientId: string): Promise<void> {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        userId,
+        clientId,
+        deletedAt: null,
+      },
+    });
+
+    const totalCredit = transactions
+      .filter((t) => t.type === 'CREDIT')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const totalPayment = transactions
+      .filter((t) => t.type === 'PAYMENT')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const totalDebt = totalCredit - totalPayment;
+
+    await prisma.client.update({
+      where: { id: clientId },
+      data: {
+        totalCredit: new Prisma.Decimal(totalCredit),
+        totalPayment: new Prisma.Decimal(totalPayment),
+        totalDebt: new Prisma.Decimal(Math.max(0, totalDebt)),
+      },
+    });
+  }
+}
+
+export default new TransactionService();

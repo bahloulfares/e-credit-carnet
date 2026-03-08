@@ -1,0 +1,210 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../models/transaction_model.dart';
+import '../constants/app_constants.dart';
+import 'api_client.dart';
+
+class TransactionService {
+  static const String endpoint = '$baseUrl/transactions';
+  final ApiClient apiClient;
+  final http.Client httpClient;
+
+  TransactionService({required this.apiClient, http.Client? httpClient})
+    : httpClient = httpClient ?? http.Client();
+
+  Future<List<Transaction>> getTransactions({
+    String? clientId,
+    int skip = 0,
+    int take = 20,
+  }) async {
+    try {
+      String url = '$endpoint?skip=$skip&take=$take';
+      if (clientId != null) {
+        url += '&clientId=$clientId';
+      }
+
+      final response = await httpClient
+          .get(
+            Uri.parse(url),
+            headers: {'Authorization': 'Bearer ${apiClient.token}'},
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return (data['transactions'] as List)
+            .map((e) => Transaction.fromJson(e))
+            .toList();
+      } else {
+        throw ApiException(
+          message:
+              jsonDecode(response.body)['error'] ??
+              'Failed to load transactions',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw ApiException(message: e.toString(), statusCode: 0);
+    }
+  }
+
+  Future<Transaction> getTransactionById(String transactionId) async {
+    try {
+      final response = await httpClient
+          .get(
+            Uri.parse('$endpoint/$transactionId'),
+            headers: {'Authorization': 'Bearer ${apiClient.token}'},
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return Transaction.fromJson(data['transaction']);
+      } else {
+        throw ApiException(
+          message:
+              jsonDecode(response.body)['error'] ??
+              'Failed to load transaction',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw ApiException(message: e.toString(), statusCode: 0);
+    }
+  }
+
+  Future<Transaction> createTransaction({
+    required String clientId,
+    required String type,
+    required double amount,
+    String? description,
+    DateTime? dueDate,
+    String? paymentMethod,
+  }) async {
+    try {
+      final response = await httpClient
+          .post(
+            Uri.parse(endpoint),
+            headers: {
+              'Authorization': 'Bearer ${apiClient.token}',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'clientId': clientId,
+              'type': type,
+              'amount': amount,
+              'description': description,
+              'dueDate': dueDate?.toIso8601String(),
+              'paymentMethod': paymentMethod,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return Transaction.fromJson(data['transaction']);
+      } else {
+        throw ApiException(
+          message:
+              jsonDecode(response.body)['error'] ??
+              'Failed to create transaction',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw ApiException(message: e.toString(), statusCode: 0);
+    }
+  }
+
+  Future<Transaction> updateTransaction(
+    String transactionId, {
+    String? description,
+    DateTime? dueDate,
+    String? paymentMethod,
+  }) async {
+    try {
+      final response = await httpClient
+          .put(
+            Uri.parse('$endpoint/$transactionId'),
+            headers: {
+              'Authorization': 'Bearer ${apiClient.token}',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'description': description,
+              'dueDate': dueDate?.toIso8601String(),
+              'paymentMethod': paymentMethod,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return Transaction.fromJson(data['transaction']);
+      } else {
+        throw ApiException(
+          message:
+              jsonDecode(response.body)['error'] ??
+              'Failed to update transaction',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw ApiException(message: e.toString(), statusCode: 0);
+    }
+  }
+
+  Future<void> deleteTransaction(String transactionId) async {
+    try {
+      final response = await httpClient
+          .delete(
+            Uri.parse('$endpoint/$transactionId'),
+            headers: {'Authorization': 'Bearer ${apiClient.token}'},
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          message:
+              jsonDecode(response.body)['error'] ??
+              'Failed to delete transaction',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw ApiException(message: e.toString(), statusCode: 0);
+    }
+  }
+
+  Future<Transaction> markAsPaid(
+    String transactionId, {
+    String? paymentMethod,
+  }) async {
+    try {
+      final response = await httpClient
+          .post(
+            Uri.parse('$endpoint/$transactionId/mark-as-paid'),
+            headers: {
+              'Authorization': 'Bearer ${apiClient.token}',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'paymentMethod': paymentMethod}),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return Transaction.fromJson(data['transaction']);
+      } else {
+        throw ApiException(
+          message:
+              jsonDecode(response.body)['error'] ??
+              'Failed to mark transaction as paid',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw ApiException(message: e.toString(), statusCode: 0);
+    }
+  }
+}
