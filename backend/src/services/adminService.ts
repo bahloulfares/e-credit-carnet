@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
 import { ApiError } from '../utils/errors';
 import { hashPassword } from '../utils/bcrypt';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 export interface AdminEpicierSummary {
   id: string;

@@ -1,8 +1,7 @@
-import { PrismaClient, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { ApiError } from '../utils/errors';
 import { hashPassword, comparePasswords } from '../utils/bcrypt';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 export class AuthService {
   async register(userData: {

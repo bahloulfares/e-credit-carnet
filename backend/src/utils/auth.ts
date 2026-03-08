@@ -1,8 +1,7 @@
-import { PrismaClient, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { hashPassword, comparePasswords } from './bcrypt';
 import { generateToken } from './jwt';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 export interface LoginCredentials {
   email: string;

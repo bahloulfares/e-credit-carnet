@@ -1,7 +1,6 @@
-import { PrismaClient, Client } from '@prisma/client';
+import { Client } from '@prisma/client';
 import { ApiError } from '../utils/errors';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 export class ClientService {
   async createClient(

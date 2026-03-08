@@ -1,7 +1,6 @@
-import { PrismaClient, Transaction, Prisma, TransactionType } from '@prisma/client';
+import { Transaction, Prisma, TransactionType } from '@prisma/client';
 import { ApiError } from '../utils/errors';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 type TransactionWithClient = Transaction & {
   client?: {

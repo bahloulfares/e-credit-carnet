@@ -1,10 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
 import logger from '../utils/logger';
 import { convertDecimalsToNumbers } from '../utils/decimal';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 export class DashboardController {
   async getStats(req: AuthRequest, res: Response): Promise<void> {

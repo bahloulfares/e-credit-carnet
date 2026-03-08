@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { verifyToken } from '../utils/jwt';
 import logger from '../utils/logger';
+import prisma from '../lib/prisma';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -10,8 +10,6 @@ export interface AuthRequest extends Request {
     role: string;
   };
 }
-
-const prisma = new PrismaClient();
 
 const hasAnyRole = (userRole: string | undefined, allowedRoles: string[]): boolean => {
   if (!userRole) {
