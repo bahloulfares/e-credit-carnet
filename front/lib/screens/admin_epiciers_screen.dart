@@ -50,7 +50,10 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin - Comptes Épiciers'),
+        title: const Text(
+          'Gestion Épiciers',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
         centerTitle: true,
         actions: [
           IconButton(
