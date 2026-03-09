@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/admin_epicier_model.dart';
 import '../providers/admin_provider.dart';
-import '../providers/auth_provider.dart';
-import '../constants/app_constants.dart';
 import '../services/api_client.dart';
+import '../widgets/app_drawer.dart';
 
 class AdminEpiciersScreen extends ConsumerStatefulWidget {
   const AdminEpiciersScreen({super.key});
@@ -41,41 +40,8 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            tooltip: 'Clients',
-            icon: const Icon(Icons.people),
-            onPressed: () async {
-              await Navigator.of(context).pushNamed(Routes.clients);
-              if (!context.mounted) return;
-              ref.invalidate(adminGlobalStatsProvider);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.invalidate(adminGlobalStatsProvider);
-              ref.invalidate(adminEpiciersProvider);
-            },
-          ),
-          IconButton(
-            tooltip: 'Profile',
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.of(context).pushNamed(Routes.profile);
-            },
-          ),
-          IconButton(
-            tooltip: 'Logout',
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await ref.read(authStateProvider.notifier).logout();
-              if (!context.mounted) return;
-              Navigator.of(context).pushReplacementNamed(Routes.login);
-            },
-          ),
-        ],
       ),
+      drawer: const AppDrawer(),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(

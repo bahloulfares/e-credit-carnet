@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/dashboard_provider.dart';
-import '../providers/auth_provider.dart';
-import '../constants/app_constants.dart';
+import '../widgets/app_drawer.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -10,59 +9,10 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(dashboardStatsProvider);
-    final authState = ref.watch(authStateProvider);
-    final isAdmin = authState.user?.role == 'SUPER_ADMIN';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        centerTitle: true,
-        actions: [
-          if (isAdmin)
-            IconButton(
-              tooltip: 'Admin',
-              icon: const Icon(Icons.admin_panel_settings),
-              onPressed: () async {
-                await Navigator.of(context).pushNamed(Routes.adminEpiciers);
-                if (!context.mounted) return;
-                await ref
-                    .read(dashboardRefreshProvider.notifier)
-                    .refreshStats();
-              },
-            ),
-          IconButton(
-            tooltip: 'Clients',
-            icon: const Icon(Icons.people),
-            onPressed: () async {
-              await Navigator.of(context).pushNamed(Routes.clients);
-              if (!context.mounted) return;
-              await ref.read(dashboardRefreshProvider.notifier).refreshStats();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.read(dashboardRefreshProvider.notifier).refreshStats();
-            },
-          ),
-          IconButton(
-            tooltip: 'Profile',
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.of(context).pushNamed(Routes.profile);
-            },
-          ),
-          IconButton(
-            tooltip: 'Logout',
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await ref.read(authStateProvider.notifier).logout();
-              if (!context.mounted) return;
-              Navigator.of(context).pushReplacementNamed(Routes.login);
-            },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Dashboard'), centerTitle: true),
+      drawer: const AppDrawer(),
       body: RefreshIndicator(
         onRefresh: () async {
           await ref.read(dashboardRefreshProvider.notifier).refreshStats();
