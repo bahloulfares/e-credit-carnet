@@ -52,15 +52,6 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
             },
           ),
           IconButton(
-            tooltip: 'Transactions',
-            icon: const Icon(Icons.receipt_long),
-            onPressed: () async {
-              await Navigator.of(context).pushNamed(Routes.transactions);
-              if (!context.mounted) return;
-              ref.invalidate(adminGlobalStatsProvider);
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
               ref.invalidate(adminGlobalStatsProvider);

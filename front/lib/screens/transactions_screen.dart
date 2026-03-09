@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/transaction_provider.dart';
-import '../providers/client_provider.dart';
 import '../models/transaction_model.dart';
 
 class TransactionsScreen extends ConsumerStatefulWidget {
-  final String? clientId;
-  final String? clientName;
+  final String clientId;
+  final String clientName;
 
-  const TransactionsScreen({super.key, this.clientId, this.clientName});
+  const TransactionsScreen({
+    super.key,
+    required this.clientId,
+    required this.clientName,
+  });
 
   @override
   ConsumerState<TransactionsScreen> createState() => _TransactionsScreenState();
@@ -17,8 +20,6 @@ class TransactionsScreen extends ConsumerStatefulWidget {
 class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   late final ScrollController _scrollController;
   String _selectedTypeFilter = 'ALL';
-  bool _onlyUnpaidCredits = false;
-  String? _selectedClientFilter; // null = tous les clients
 
   @override
   void initState() {
@@ -48,28 +49,14 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(transactionListProvider(widget.clientId));
-    final clientsState = widget.clientId == null
-        ? ref.watch(clientListProvider)
-        : null;
 
     final filteredTransactions = state.transactions.where((tx) {
-      final matchesType =
-          _selectedTypeFilter == 'ALL' || tx.type == _selectedTypeFilter;
-      final matchesUnpaid =
-          !_onlyUnpaidCredits || (tx.type == 'CREDIT' && !tx.isPaid);
-      final matchesClient =
-          _selectedClientFilter == null ||
-          tx.client?.id == _selectedClientFilter;
-      return matchesType && matchesUnpaid && matchesClient;
+      return _selectedTypeFilter == 'ALL' || tx.type == _selectedTypeFilter;
     }).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.clientName == null
-              ? 'Transactions'
-              : 'Transactions - ${widget.clientName}',
-        ),
+        title: Text('Transactions - ${widget.clientName}'),
         centerTitle: true,
       ),
       body: Column(
@@ -78,73 +65,24 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _selectedTypeFilter,
-                        decoration: const InputDecoration(labelText: 'Type'),
-                        items: const [
-                          DropdownMenuItem(value: 'ALL', child: Text('Tous')),
-                          DropdownMenuItem(
-                            value: 'CREDIT',
-                            child: Text('Crédits'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'PAYMENT',
-                            child: Text('Paiements'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setState(() {
-                            _selectedTypeFilter = value;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Impayés'),
-                      selected: _onlyUnpaidCredits,
-                      onSelected: (selected) {
-                        setState(() {
-                          _onlyUnpaidCredits = selected;
-                        });
-                      },
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedTypeFilter,
+                  decoration: const InputDecoration(labelText: 'Type'),
+                  items: const [
+                    DropdownMenuItem(value: 'ALL', child: Text('Tous')),
+                    DropdownMenuItem(value: 'CREDIT', child: Text('Crédits')),
+                    DropdownMenuItem(
+                      value: 'PAYMENT',
+                      child: Text('Paiements'),
                     ),
                   ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() {
+                      _selectedTypeFilter = value;
+                    });
+                  },
                 ),
-                if (widget.clientId == null && clientsState != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: InputDecorator(
-                      decoration: const InputDecoration(labelText: 'Client'),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String?>(
-                          value: _selectedClientFilter,
-                          isExpanded: true,
-                          items: [
-                            const DropdownMenuItem<String?>(
-                              value: null,
-                              child: Text('Tous les clients'),
-                            ),
-                            ...clientsState.clients.map(
-                              (client) => DropdownMenuItem<String?>(
-                                value: client.id,
-                                child: Text(client.fullName),
-                              ),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedClientFilter = value;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -183,13 +121,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         }
 
                         final tx = filteredTransactions[index];
-                        return _TransactionTile(
-                          transaction: tx,
-                          showClientInfo: widget.clientId == null,
-                          onMarkPaid: tx.type == 'CREDIT' && !tx.isPaid
-                              ? () => _showMarkAsPaidDialog(tx.id)
-                              : null,
-                        );
+                        return _TransactionTile(transaction: tx);
                       },
                     ),
             ),
@@ -197,17 +129,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: widget.clientId == null
-            ? () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Open transactions from a client to add one.',
-                    ),
-                  ),
-                );
-              }
-            : _showAddTransactionDialog,
+        onPressed: _showAddTransactionDialog,
         icon: const Icon(Icons.add),
         label: const Text('Add'),
       ),
@@ -285,8 +207,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    if (!formKey.currentState!.validate() ||
-                        widget.clientId == null) {
+                    if (!formKey.currentState!.validate()) {
                       return;
                     }
 
@@ -296,7 +217,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                             transactionListProvider(widget.clientId).notifier,
                           )
                           .createTransaction(
-                            clientId: widget.clientId!,
+                            clientId: widget.clientId,
                             type: type,
                             amount: double.parse(amountValue),
                             description: descriptionValue.trim().isEmpty
@@ -327,125 +248,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       },
     );
   }
-
-  Future<void> _showMarkAsPaidDialog(String transactionId) async {
-    String? paymentMethod = 'cash'; // Valeur par défaut
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Marquer comme payé'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Sélectionnez la méthode de paiement :'),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: paymentMethod,
-                    decoration: const InputDecoration(
-                      labelText: 'Méthode de paiement',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'cash',
-                        child: Row(
-                          children: [
-                            Icon(Icons.money, color: Colors.green),
-                            SizedBox(width: 8),
-                            Text('Espèce'),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'D17',
-                        child: Row(
-                          children: [
-                            Icon(Icons.phone_android, color: Colors.orange),
-                            SizedBox(width: 8),
-                            Text('D17'),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Flouci',
-                        child: Row(
-                          children: [
-                            Icon(Icons.payment, color: Colors.blue),
-                            SizedBox(width: 8),
-                            Text('Flouci'),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'bank_transfer',
-                        child: Row(
-                          children: [
-                            Icon(Icons.account_balance, color: Colors.purple),
-                            SizedBox(width: 8),
-                            Text('Virement bancaire'),
-                          ],
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setDialogState(() {
-                        paymentMethod = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Annuler'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Confirmer'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    if (confirmed != true) return;
-
-    try {
-      await ref
-          .read(transactionListProvider(widget.clientId).notifier)
-          .markAsPaid(transactionId, paymentMethod: paymentMethod);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transaction marquée comme payée')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
-    }
-  }
 }
 
 class _TransactionTile extends StatelessWidget {
   final Transaction transaction;
-  final bool showClientInfo;
-  final Future<void> Function()? onMarkPaid;
 
-  const _TransactionTile({
-    required this.transaction,
-    required this.showClientInfo,
-    this.onMarkPaid,
-  });
+  const _TransactionTile({required this.transaction});
 
   @override
   Widget build(BuildContext context) {
@@ -462,25 +270,11 @@ class _TransactionTile extends StatelessWidget {
           ),
         ),
         title: Text('${transaction.amount.toStringAsFixed(2)} DT'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              transaction.description?.isNotEmpty == true
-                  ? transaction.description!
-                  : transaction.type,
-            ),
-            if (showClientInfo && transaction.client != null)
-              Text(
-                'Client: ${transaction.client!.fullName}${transaction.client!.phone?.isNotEmpty == true ? ' • ${transaction.client!.phone}' : ''}',
-                style: const TextStyle(fontSize: 12),
-              ),
-          ],
+        subtitle: Text(
+          transaction.description?.isNotEmpty == true
+              ? transaction.description!
+              : transaction.type,
         ),
-        trailing: onMarkPaid == null
-            ? null
-            : TextButton(onPressed: onMarkPaid, child: const Text('Mark paid')),
       ),
     );
   }

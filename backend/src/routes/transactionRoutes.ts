@@ -13,6 +13,6 @@ router.get('/', (req, res) => transactionController.getTransactions(req, res));
 router.get('/:id', (req, res) => transactionController.getTransactionById(req, res));
 router.put('/:id', (req, res) => transactionController.updateTransaction(req, res));
 router.delete('/:id', (req, res) => transactionController.deleteTransaction(req, res));
-router.post('/:id/mark-as-paid', (req, res) => transactionController.markAsPaid(req, res));
+// Mark as paid route removed - use createTransaction with type PAYMENT instead
 
 export default router;

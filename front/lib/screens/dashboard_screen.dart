@@ -40,15 +40,6 @@ class DashboardScreen extends ConsumerWidget {
             },
           ),
           IconButton(
-            tooltip: 'Transactions',
-            icon: const Icon(Icons.receipt_long),
-            onPressed: () async {
-              await Navigator.of(context).pushNamed(Routes.transactions);
-              if (!context.mounted) return;
-              await ref.read(dashboardRefreshProvider.notifier).refreshStats();
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
               ref.read(dashboardRefreshProvider.notifier).refreshStats();

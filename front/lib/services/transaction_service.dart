@@ -206,36 +206,4 @@ class TransactionService {
       throw _mapException(e);
     }
   }
-
-  Future<Transaction> markAsPaid(
-    String transactionId, {
-    String? paymentMethod,
-  }) async {
-    try {
-      final response = await httpClient
-          .post(
-            Uri.parse('$endpoint/$transactionId/mark-as-paid'),
-            headers: {
-              'Authorization': 'Bearer ${apiClient.token}',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({'paymentMethod': paymentMethod}),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return Transaction.fromJson(data['transaction']);
-      } else {
-        throw ApiException(
-          message:
-              jsonDecode(response.body)['error'] ??
-              'Failed to mark transaction as paid',
-          statusCode: response.statusCode,
-        );
-      }
-    } catch (e) {
-      throw _mapException(e);
-    }
-  }
 }

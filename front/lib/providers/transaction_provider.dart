@@ -159,28 +159,6 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
     }
   }
 
-  Future<void> markAsPaid(String transactionId, {String? paymentMethod}) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final paidTransaction = await transactionService.markAsPaid(
-        transactionId,
-        paymentMethod: paymentMethod,
-      );
-
-      final updatedTransactions = state.transactions.map((t) {
-        return t.id == transactionId ? paidTransaction : t;
-      }).toList();
-
-      state = state.copyWith(
-        transactions: updatedTransactions,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(error: e.toString(), isLoading: false);
-      rethrow;
-    }
-  }
-
   Future<void> deleteTransaction(String transactionId) async {
     state = state.copyWith(isLoading: true, error: null);
     try {

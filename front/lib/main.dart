@@ -70,11 +70,22 @@ class MyApp extends ConsumerWidget {
 
         if (settings.name == Routes.transactions) {
           final args = settings.arguments as Map<String, dynamic>?;
+          final clientId = args?['clientId'] as String?;
+          final clientName = args?['clientName'] as String?;
+
+          if (clientId == null || clientName == null) {
+            return MaterialPageRoute(
+              builder: (_) => const Scaffold(
+                body: Center(
+                  child: Text('Client ID and name required for transactions'),
+                ),
+              ),
+            );
+          }
+
           return MaterialPageRoute(
-            builder: (_) => TransactionsScreen(
-              clientId: args?['clientId'] as String?,
-              clientName: args?['clientName'] as String?,
-            ),
+            builder: (_) =>
+                TransactionsScreen(clientId: clientId, clientName: clientName),
           );
         }
 
