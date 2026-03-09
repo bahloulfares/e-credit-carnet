@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../models/dashboard_model.dart';
 import '../constants/app_constants.dart';
@@ -11,6 +12,28 @@ class DashboardService {
 
   DashboardService({required this.apiClient, http.Client? httpClient})
     : httpClient = httpClient ?? http.Client();
+
+  ApiException _mapException(Object error) {
+    if (error is ApiException) {
+      return error;
+    }
+
+    if (error is TimeoutException) {
+      return ApiException(
+        message: 'Request timeout. Please try again.',
+        statusCode: 408,
+      );
+    }
+
+    if (error is http.ClientException) {
+      return ApiException(
+        message: 'Network error. Please check your internet connection.',
+        statusCode: 0,
+      );
+    }
+
+    return ApiException(message: error.toString(), statusCode: 0);
+  }
 
   Future<DashboardStats> getStats() async {
     try {
@@ -31,7 +54,7 @@ class DashboardService {
         );
       }
     } catch (e) {
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -55,7 +78,7 @@ class DashboardService {
         );
       }
     } catch (e) {
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -81,7 +104,7 @@ class DashboardService {
         );
       }
     } catch (e) {
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 }

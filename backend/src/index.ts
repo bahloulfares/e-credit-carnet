@@ -13,6 +13,24 @@ import { errorMiddleware } from './middleware/error';
 
 dotenv.config();
 
+const validateEnvironment = (): void => {
+  const missingVariables: string[] = [];
+
+  if (!process.env.DATABASE_URL) {
+    missingVariables.push('DATABASE_URL');
+  }
+
+  if (!process.env.JWT_SECRET) {
+    missingVariables.push('JWT_SECRET');
+  }
+
+  if (missingVariables.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingVariables.join(', ')}`);
+  }
+};
+
+validateEnvironment();
+
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')

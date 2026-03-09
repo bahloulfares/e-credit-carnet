@@ -1,4 +1,5 @@
 import winston from 'winston';
+import TransportStream from 'winston-transport';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -29,17 +30,17 @@ const format = winston.format.combine(
   ),
 );
 
-const transports = [
-  // Console transport
-  new winston.transports.Console(),
-  // File transport for errors
-  new winston.transports.File({
-    filename: 'logs/error.log',
-    level: 'error',
-  }),
-  // File transport for all logs
-  new winston.transports.File({ filename: 'logs/all.log' }),
-];
+const transports: TransportStream[] = [new winston.transports.Console()];
+
+if (process.env.NODE_ENV !== 'production') {
+  transports.push(
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+    }),
+    new winston.transports.File({ filename: 'logs/all.log' }),
+  );
+}
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'debug',

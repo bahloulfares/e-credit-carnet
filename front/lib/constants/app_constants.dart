@@ -14,6 +14,17 @@ const String baseUrl = String.fromEnvironment(
   defaultValue: defaultApiBaseUrl,
 );
 
+void validateRuntimeConfig() {
+  const envApiBaseUrl = String.fromEnvironment('API_BASE_URL');
+  const isRelease = bool.fromEnvironment('dart.vm.product');
+
+  if (isRelease && envApiBaseUrl.isEmpty) {
+    throw Exception(
+      'Missing API_BASE_URL for release build. Use --dart-define=API_BASE_URL=https://your-api/api',
+    );
+  }
+}
+
 const int connectionTimeout = 30000;
 const int receiveTimeout = 30000;
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../models/client_model.dart';
 import '../constants/app_constants.dart';
@@ -11,6 +12,28 @@ class ClientService {
 
   ClientService({required this.apiClient, http.Client? httpClient})
     : httpClient = httpClient ?? http.Client();
+
+  ApiException _mapException(Object error) {
+    if (error is ApiException) {
+      return error;
+    }
+
+    if (error is TimeoutException) {
+      return ApiException(
+        message: 'Request timeout. Please try again.',
+        statusCode: 408,
+      );
+    }
+
+    if (error is http.ClientException) {
+      return ApiException(
+        message: 'Network error. Please check your internet connection.',
+        statusCode: 0,
+      );
+    }
+
+    return ApiException(message: error.toString(), statusCode: 0);
+  }
 
   Future<List<Client>> getClients({int skip = 0, int take = 10}) async {
     try {
@@ -34,7 +57,7 @@ class ClientService {
         );
       }
     } catch (e) {
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -57,7 +80,7 @@ class ClientService {
         );
       }
     } catch (e) {
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -97,7 +120,7 @@ class ClientService {
         );
       }
     } catch (e) {
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -138,7 +161,7 @@ class ClientService {
         );
       }
     } catch (e) {
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -159,7 +182,7 @@ class ClientService {
         );
       }
     } catch (e) {
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -184,7 +207,7 @@ class ClientService {
         );
       }
     } catch (e) {
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -210,7 +233,7 @@ class ClientService {
         );
       }
     } catch (e) {
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 }

@@ -25,11 +25,23 @@ final dashboardRefreshProvider =
 class DashboardRefreshNotifier extends StateNotifier<bool> {
   final DashboardService dashboardService;
   final Ref ref;
+  DateTime? _lastRefreshAt;
 
   DashboardRefreshNotifier(this.dashboardService, this.ref) : super(false);
 
   Future<void> refreshStats() async {
+    if (state) {
+      return;
+    }
+
+    final now = DateTime.now();
+    if (_lastRefreshAt != null &&
+        now.difference(_lastRefreshAt!) < const Duration(milliseconds: 800)) {
+      return;
+    }
+
     state = true;
+    _lastRefreshAt = now;
     try {
       // Invalidate the provider to refetch data
       ref.invalidate(dashboardStatsProvider);

@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
 import '../constants/app_constants.dart';
@@ -19,6 +20,28 @@ class ApiClient {
 
   Future<void> initialize() async {
     _token = await _secureStorage.read(key: 'jwt_token');
+  }
+
+  ApiException _mapException(Object error) {
+    if (error is ApiException) {
+      return error;
+    }
+
+    if (error is TimeoutException) {
+      return ApiException(
+        message: 'Request timeout. Please try again.',
+        statusCode: 408,
+      );
+    }
+
+    if (error is http.ClientException) {
+      return ApiException(
+        message: 'Network error. Please check your internet connection.',
+        statusCode: 0,
+      );
+    }
+
+    return ApiException(message: error.toString(), statusCode: 0);
   }
 
   Future<Map<String, dynamic>> register({
@@ -57,8 +80,7 @@ class ApiClient {
         );
       }
     } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -87,8 +109,7 @@ class ApiClient {
         );
       }
     } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -109,8 +130,7 @@ class ApiClient {
         );
       }
     } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -149,8 +169,7 @@ class ApiClient {
         );
       }
     } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 

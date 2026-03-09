@@ -16,29 +16,15 @@ class AdminEpiciersScreen extends ConsumerStatefulWidget {
 
 class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
   late final TextEditingController _searchController;
-  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    _scrollController = ScrollController()..addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-
-    final position = _scrollController.position;
-    if (position.pixels >= position.maxScrollExtent - 200) {
-      ref.read(adminEpiciersProvider.notifier).loadEpiciers();
-    }
   }
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -99,205 +85,208 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: statsAsync.when(
-              data: (stats) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    children: [
-                      _AdminStatCard(
-                        title: 'Épiciers',
-                        value:
-                            '${stats.totalEpiciers} (${stats.activeEpiciers} actifs)',
-                        icon: Icons.store,
-                        color: Colors.indigo,
-                      ),
-                      _AdminStatCard(
-                        title: 'Total Clients',
-                        value: stats.totalClients.toString(),
-                        icon: Icons.people,
-                        color: Colors.blue,
-                      ),
-                      _AdminStatCard(
-                        title: 'Total Dette',
-                        value: '${stats.totalDebt.toStringAsFixed(2)} DT',
-                        icon: Icons.money_off,
-                        color: Colors.red,
-                      ),
-                      _AdminStatCard(
-                        title: 'Total Transactions',
-                        value: stats.totalTransactions.toString(),
-                        icon: Icons.receipt_long,
-                        color: Colors.orange,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'This Month (données réelles)',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _MonthlyStatRow(
-                            label: 'Transactions',
-                            value: stats.monthlyTransactions.toString(),
-                          ),
-                          const Divider(height: 20),
-                          _MonthlyStatRow(
-                            label: 'Crédit',
-                            value:
-                                '${stats.monthlyCredit.toStringAsFixed(2)} DT',
-                            valueColor: Colors.green,
-                          ),
-                          const Divider(height: 20),
-                          _MonthlyStatRow(
-                            label: 'Paiement',
-                            value:
-                                '${stats.monthlyPayment.toStringAsFixed(2)} DT',
-                            valueColor: Colors.blue,
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Cumul global',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 8),
-                          _MonthlyStatRow(
-                            label: 'Total Crédit',
-                            value: '${stats.totalCredit.toStringAsFixed(2)} DT',
-                            valueColor: Colors.green,
-                          ),
-                          const Divider(height: 20),
-                          _MonthlyStatRow(
-                            label: 'Total Paiement',
-                            value:
-                                '${stats.totalPayment.toStringAsFixed(2)} DT',
-                            valueColor: Colors.blue,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (_, _) => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  'Impossible de charger les statistiques globales.',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      hintText: 'Rechercher (email, nom, boutique)',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onSubmitted: (value) {
-                      ref
-                          .read(adminEpiciersProvider.notifier)
-                          .loadEpiciers(search: value, refresh: true);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  tooltip: 'Rechercher',
-                  onPressed: () {
-                    ref
-                        .read(adminEpiciersProvider.notifier)
-                        .loadEpiciers(
-                          search: _searchController.text,
-                          refresh: true,
-                        );
-                  },
-                  icon: const Icon(Icons.tune),
-                ),
-              ],
-            ),
-          ),
-          if (state.error != null)
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                state.error!,
-                style: const TextStyle(color: Colors.red),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: statsAsync.when(
+                data: (stats) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      children: [
+                        _AdminStatCard(
+                          title: 'Épiciers',
+                          value:
+                              '${stats.totalEpiciers} (${stats.activeEpiciers} actifs)',
+                          icon: Icons.store,
+                          color: Colors.indigo,
+                        ),
+                        _AdminStatCard(
+                          title: 'Total Clients',
+                          value: stats.totalClients.toString(),
+                          icon: Icons.people,
+                          color: Colors.blue,
+                        ),
+                        _AdminStatCard(
+                          title: 'Total Dette',
+                          value: '${stats.totalDebt.toStringAsFixed(2)} DT',
+                          icon: Icons.money_off,
+                          color: Colors.red,
+                        ),
+                        _AdminStatCard(
+                          title: 'Total Transactions',
+                          value: stats.totalTransactions.toString(),
+                          icon: Icons.receipt_long,
+                          color: Colors.orange,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'This Month (données réelles)',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _MonthlyStatRow(
+                              label: 'Transactions',
+                              value: stats.monthlyTransactions.toString(),
+                            ),
+                            const Divider(height: 20),
+                            _MonthlyStatRow(
+                              label: 'Crédit',
+                              value:
+                                  '${stats.monthlyCredit.toStringAsFixed(2)} DT',
+                              valueColor: Colors.green,
+                            ),
+                            const Divider(height: 20),
+                            _MonthlyStatRow(
+                              label: 'Paiement',
+                              value:
+                                  '${stats.monthlyPayment.toStringAsFixed(2)} DT',
+                              valueColor: Colors.blue,
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Cumul global',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 8),
+                            _MonthlyStatRow(
+                              label: 'Total Crédit',
+                              value:
+                                  '${stats.totalCredit.toStringAsFixed(2)} DT',
+                              valueColor: Colors.green,
+                            ),
+                            const Divider(height: 20),
+                            _MonthlyStatRow(
+                              label: 'Total Paiement',
+                              value:
+                                  '${stats.totalPayment.toStringAsFixed(2)} DT',
+                              valueColor: Colors.blue,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (_, _) => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'Impossible de charger les statistiques globales.',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
               ),
             ),
-          Expanded(
-            child: state.isLoading && state.epiciers.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : state.epiciers.isEmpty
-                ? const Center(child: Text('Aucun épicier trouvé'))
-                : RefreshIndicator(
-                    onRefresh: () async {
-                      await ref
-                          .read(adminEpiciersProvider.notifier)
-                          .loadEpiciers(search: state.search, refresh: true);
-                    },
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      itemCount:
-                          state.epiciers.length +
-                          (state.hasMore || state.isLoading ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= state.epiciers.length) {
-                          if (state.isLoading) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Center(
-                              child: Text('Fin de la liste des épiciers'),
-                            ),
-                          );
-                        }
-
-                        final epicier = state.epiciers[index];
-                        return _EpicierTile(
-                          epicier: epicier,
-                          onViewClients: () => _showEpicierClients(epicier),
-                          onToggleStatus: () => _toggleStatus(epicier),
-                          onResetPassword: () =>
-                              _showResetPasswordDialog(epicier),
-                        );
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Rechercher (email, nom, boutique)',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onSubmitted: (value) {
+                        ref
+                            .read(adminEpiciersProvider.notifier)
+                            .loadEpiciers(search: value, refresh: true);
                       },
                     ),
                   ),
-          ),
-        ],
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'Rechercher',
+                    onPressed: () {
+                      ref
+                          .read(adminEpiciersProvider.notifier)
+                          .loadEpiciers(
+                            search: _searchController.text,
+                            refresh: true,
+                          );
+                    },
+                    icon: const Icon(Icons.tune),
+                  ),
+                ],
+              ),
+            ),
+            if (state.error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  state.error!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            if (state.isLoading && state.epiciers.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (state.epiciers.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: Text('Aucun épicier trouvé')),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount:
+                    state.epiciers.length +
+                    (state.hasMore || state.isLoading ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index >= state.epiciers.length) {
+                    if (state.isLoading) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: Text('Fin de la liste des épiciers'),
+                      ),
+                    );
+                  }
+
+                  final epicier = state.epiciers[index];
+                  return _EpicierTile(
+                    epicier: epicier,
+                    onViewClients: () => _showEpicierClients(epicier),
+                    onToggleStatus: () => _toggleStatus(epicier),
+                    onResetPassword: () => _showResetPasswordDialog(epicier),
+                  );
+                },
+              ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

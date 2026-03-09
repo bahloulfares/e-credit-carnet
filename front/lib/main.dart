@@ -13,6 +13,7 @@ import 'providers/auth_provider.dart';
 import 'constants/app_constants.dart';
 
 void main() {
+  validateRuntimeConfig();
   runApp(const ProviderScope(child: MyApp()));
 }
 

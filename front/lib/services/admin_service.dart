@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../models/admin_epicier_model.dart';
 import '../models/client_model.dart';
@@ -13,6 +14,28 @@ class AdminService {
 
   AdminService({required this.apiClient, http.Client? httpClient})
     : httpClient = httpClient ?? http.Client();
+
+  ApiException _mapException(Object error) {
+    if (error is ApiException) {
+      return error;
+    }
+
+    if (error is TimeoutException) {
+      return ApiException(
+        message: 'Request timeout. Please try again.',
+        statusCode: 408,
+      );
+    }
+
+    if (error is http.ClientException) {
+      return ApiException(
+        message: 'Network error. Please check your internet connection.',
+        statusCode: 0,
+      );
+    }
+
+    return ApiException(message: error.toString(), statusCode: 0);
+  }
 
   Map<String, String> _headers() => {
     'Content-Type': 'application/json',
@@ -53,8 +76,7 @@ class AdminService {
           .toList();
       return list;
     } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -77,8 +99,7 @@ class AdminService {
       final stats = (data['stats'] as Map<String, dynamic>? ?? {});
       return AdminGlobalStats.fromJson(stats);
     } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -100,8 +121,7 @@ class AdminService {
         );
       }
     } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -123,8 +143,7 @@ class AdminService {
         );
       }
     } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 
@@ -157,8 +176,7 @@ class AdminService {
           .toList();
       return list;
     } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException(message: e.toString(), statusCode: 0);
+      throw _mapException(e);
     }
   }
 }
