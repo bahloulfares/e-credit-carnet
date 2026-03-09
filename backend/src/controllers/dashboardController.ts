@@ -12,108 +12,121 @@ export class DashboardController {
         return;
       }
 
-      // Get total clients
-      const totalClients = await prisma.client.count({
-        where: {
-          userId: req.user.id,
-          isActive: true,
-        },
-      });
-
-      // Get total debt
-      const clientStats = await prisma.client.aggregate({
-        where: {
-          userId: req.user.id,
-          isActive: true,
-        },
-        _sum: {
-          totalDebt: true,
-          totalCredit: true,
-          totalPayment: true,
-        },
-      });
-
-      // Get recent transactions
-      const recentTransactions = await prisma.transaction.findMany({
-        where: {
-          userId: req.user.id,
-          deletedAt: null,
-          client: {
-            is: {
-              isActive: true,
-            },
-          },
-        },
-        include: {
-          client: {
-            select: {
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-      });
-
-      // Get this month's stats
+      // Get this month's date
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
-      const monthlyStats = await prisma.transaction.aggregate({
-        where: {
-          userId: req.user.id,
-          client: {
-            is: {
-              isActive: true,
-            },
+      // Use Promise.all for parallel queries
+      const [
+        totalClients,
+        clientStats,
+        recentTransactions,
+        monthlyStats,
+        monthlyCreditStats,
+        monthlyPaymentStats,
+      ] = await Promise.all([
+        // Get total clients
+        prisma.client.count({
+          where: {
+            userId: req.user.id,
+            isActive: true,
           },
-          transactionDate: {
-            gte: startOfMonth,
-          },
-          deletedAt: null,
-        },
-        _count: true,
-      });
+        }),
 
-      const monthlyCreditStats = await prisma.transaction.aggregate({
-        where: {
-          userId: req.user.id,
-          type: 'CREDIT',
-          client: {
-            is: {
-              isActive: true,
-            },
+        // Get total debt
+        prisma.client.aggregate({
+          where: {
+            userId: req.user.id,
+            isActive: true,
           },
-          transactionDate: {
-            gte: startOfMonth,
+          _sum: {
+            totalDebt: true,
+            totalCredit: true,
+            totalPayment: true,
           },
-          deletedAt: null,
-        },
-        _sum: {
-          amount: true,
-        },
-      });
+        }),
 
-      const monthlyPaymentStats = await prisma.transaction.aggregate({
-        where: {
-          userId: req.user.id,
-          type: 'PAYMENT',
-          client: {
-            is: {
-              isActive: true,
+        // Get recent transactions
+        prisma.transaction.findMany({
+          where: {
+            userId: req.user.id,
+            deletedAt: null,
+            client: {
+              is: {
+                isActive: true,
+              },
             },
           },
-          transactionDate: {
-            gte: startOfMonth,
+          include: {
+            client: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
           },
-          deletedAt: null,
-        },
-        _sum: {
-          amount: true,
-        },
-      });
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        }),
+
+        // Get monthly transaction count
+        prisma.transaction.aggregate({
+          where: {
+            userId: req.user.id,
+            client: {
+              is: {
+                isActive: true,
+              },
+            },
+            transactionDate: {
+              gte: startOfMonth,
+            },
+            deletedAt: null,
+          },
+          _count: true,
+        }),
+
+        // Get monthly credit stats
+        prisma.transaction.aggregate({
+          where: {
+            userId: req.user.id,
+            type: 'CREDIT',
+            client: {
+              is: {
+                isActive: true,
+              },
+            },
+            transactionDate: {
+              gte: startOfMonth,
+            },
+            deletedAt: null,
+          },
+          _sum: {
+            amount: true,
+          },
+        }),
+
+        // Get monthly payment stats
+        prisma.transaction.aggregate({
+          where: {
+            userId: req.user.id,
+            type: 'PAYMENT',
+            client: {
+              is: {
+                isActive: true,
+              },
+            },
+            transactionDate: {
+              gte: startOfMonth,
+            },
+            deletedAt: null,
+          },
+          _sum: {
+            amount: true,
+          },
+        }),
+      ]);
 
       const stats = {
         totalClients,

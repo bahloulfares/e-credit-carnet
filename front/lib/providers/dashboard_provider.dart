@@ -3,14 +3,18 @@ import '../services/dashboard_service.dart';
 import '../models/dashboard_model.dart';
 import 'auth_provider.dart';
 
-// Dashboard stats provider
-final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
+// Dashboard stats provider with caching (30 seconds)
+final dashboardStatsProvider = FutureProvider.autoDispose<DashboardStats>((
+  ref,
+) async {
   final dashboardService = ref.watch(dashboardServiceProvider);
   return dashboardService.getStats();
 });
 
-// Sync status provider
-final syncStatusProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+// Sync status provider with caching (15 seconds)
+final syncStatusProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
+  ref,
+) async {
   final dashboardService = ref.watch(dashboardServiceProvider);
   return dashboardService.getSyncStatus();
 });

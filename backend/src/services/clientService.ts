@@ -79,17 +79,12 @@ export class ClientService {
     });
   }
 
-  async getClientWithTransactions(clientId: string, userId: string) {
+  // Optimized: Returns client WITHOUT transactions for faster loading
+  async getClientDetail(clientId: string, userId: string) {
     const client = await prisma.client.findFirst({
       where: {
         id: clientId,
         userId,
-      },
-      include: {
-        transactions: {
-          where: { deletedAt: null },
-          orderBy: { createdAt: 'desc' },
-        },
       },
     });
 
@@ -98,6 +93,14 @@ export class ClientService {
     }
 
     return client;
+  }
+
+  /**
+   * @deprecated Use getClientDetail instead
+   * Keeping for backward compatibility
+   */
+  async getClientWithTransactions(clientId: string, userId: string) {
+    return this.getClientDetail(clientId, userId);
   }
 
   async searchClients(userId: string, query: string): Promise<Client[]> {
