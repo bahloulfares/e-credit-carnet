@@ -90,14 +90,32 @@ export class TransactionService {
   async listTransactions(
     userId: string,
     clientId?: string,
-    options?: { skip?: number; take?: number },
+    options?: { 
+      skip?: number; 
+      take?: number;
+      type?: TransactionType;
+      isPaid?: boolean;
+    },
   ): Promise<TransactionWithClient[]> {
+    const whereClause: any = {
+      userId,
+      deletedAt: null,
+    };
+
+    if (clientId) {
+      whereClause.clientId = clientId;
+    }
+
+    if (options?.type) {
+      whereClause.type = options.type;
+    }
+
+    if (options?.isPaid !== undefined) {
+      whereClause.isPaid = options.isPaid;
+    }
+
     return prisma.transaction.findMany({
-      where: {
-        userId,
-        clientId,
-        deletedAt: null,
-      },
+      where: whereClause,
       include: {
         client: {
           select: {
@@ -205,6 +223,11 @@ export class TransactionService {
       throw new ApiError(400, 'Only credit transactions can be marked as paid');
     }
 
+    if (transaction.isPaid) {
+      throw new ApiError(400, 'Transaction already marked as paid');
+    }
+
+    // Marquer le crédit comme payé
     const updated = await prisma.transaction.update({
       where: { id: transactionId },
       data: {
@@ -214,9 +237,19 @@ export class TransactionService {
       },
     });
 
-    // Update client stats
-    await this.updateClientStats(userId, transaction.clientId);
+    // Créer automatiquement un PAYMENT correspondant
+    await this.createTransaction(
+      userId,
+      transaction.clientId,
+      {
+        type: 'PAYMENT' as TransactionType,
+        amount: Number(transaction.amount),
+        description: `Paiement du crédit ${transaction.description || ''}`.trim(),
+        paymentMethod: paymentMethod || 'cash',
+      },
+    );
 
+    // updateClientStats est déjà appelé dans createTransaction
     return updated;
   }
 

@@ -56,7 +56,7 @@ export class TransactionController {
         return;
       }
 
-      const { clientId } = req.query;
+      const { clientId, type, isPaid } = req.query;
       const skip = parseInt(req.query.skip as string) || 0;
       const take = parseInt(req.query.take as string) || 20;
 
@@ -66,6 +66,8 @@ export class TransactionController {
         {
           skip,
           take,
+          type: type as any,
+          isPaid: isPaid === 'true' ? true : isPaid === 'false' ? false : undefined,
         },
       );
 

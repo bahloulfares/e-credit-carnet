@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/client_provider.dart';
+import '../providers/transaction_provider.dart';
 import '../constants/app_constants.dart';
 
 class ClientDetailsScreen extends ConsumerStatefulWidget {
@@ -104,6 +105,20 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
+                  onPressed: () =>
+                      _showAddTransactionDialog(client.id, client.fullName),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Transaction'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
                   onPressed: () async {
                     await Navigator.of(context).pushNamed(
                       Routes.transactions,
@@ -114,12 +129,9 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                     );
                     if (!mounted) return;
                     ref.invalidate(clientDetailsProvider(widget.clientId));
-                    await ref
-                        .read(clientListProvider.notifier)
-                        .loadClients(refresh: true);
                   },
                   icon: const Icon(Icons.receipt_long),
-                  label: const Text('View Transactions'),
+                  label: const Text('View All Transactions'),
                 ),
               ),
             ],
@@ -179,6 +191,173 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+    }
+  }
+
+  Future<void> _showAddTransactionDialog(
+    String clientId,
+    String clientName,
+  ) async {
+    final formKey = GlobalKey<FormState>();
+    String type = 'CREDIT';
+    String amountValue = '';
+    String descriptionValue = '';
+    String? paymentMethod;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Ajouter Transaction - $clientName'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: type,
+                        decoration: const InputDecoration(labelText: 'Type'),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'CREDIT',
+                            child: Text('Crédit'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'PAYMENT',
+                            child: Text('Paiement'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() {
+                              type = value;
+                              if (type == 'CREDIT') {
+                                paymentMethod = null;
+                              } else {
+                                paymentMethod = 'cash';
+                              }
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Montant (DT)',
+                        ),
+                        onChanged: (value) => amountValue = value,
+                        validator: (value) {
+                          final parsed = double.tryParse(value ?? '');
+                          if (parsed == null || parsed <= 0) {
+                            return 'Entrez un montant valide';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      if (type == 'PAYMENT') ...[
+                        DropdownButtonFormField<String>(
+                          initialValue: paymentMethod ?? 'cash',
+                          decoration: const InputDecoration(
+                            labelText: 'Méthode de paiement',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'cash',
+                              child: Text('Espèce'),
+                            ),
+                            DropdownMenuItem(value: 'D17', child: Text('D17')),
+                            DropdownMenuItem(
+                              value: 'Flouci',
+                              child: Text('Flouci'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'bank_transfer',
+                              child: Text('Virement bancaire'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() {
+                              paymentMethod = value;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Description (optionnel)',
+                        ),
+                        maxLines: 2,
+                        onChanged: (value) => descriptionValue = value,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) {
+                      return;
+                    }
+
+                    final navigator = Navigator.of(dialogContext);
+                    final messenger = ScaffoldMessenger.of(context);
+
+                    try {
+                      await ref
+                          .read(transactionListProvider(clientId).notifier)
+                          .createTransaction(
+                            clientId: clientId,
+                            type: type,
+                            amount: double.parse(amountValue),
+                            description: descriptionValue.trim().isEmpty
+                                ? null
+                                : descriptionValue.trim(),
+                            paymentMethod: type == 'PAYMENT'
+                                ? paymentMethod
+                                : null,
+                          );
+
+                      if (navigator.canPop()) {
+                        navigator.pop(true);
+                      }
+                    } catch (e) {
+                      if (navigator.canPop()) {
+                        navigator.pop(false);
+                      }
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Erreur: $e')),
+                      );
+                    }
+                  },
+                  child: const Text('Enregistrer'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == true) {
+      if (!mounted) return;
+      // Rafraîchir les stats du client
+      ref.invalidate(clientDetailsProvider(widget.clientId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Transaction ajoutée avec succès')),
+      );
     }
   }
 }

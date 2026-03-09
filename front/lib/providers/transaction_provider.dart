@@ -124,8 +124,6 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
         transactions: [newTransaction, ...state.transactions],
         isLoading: false,
       );
-      // Auto-refresh pour mettre à jour les stats du client
-      await loadTransactions(refresh: true);
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;
@@ -155,8 +153,6 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
         transactions: updatedTransactions,
         isLoading: false,
       );
-      // Auto-refresh pour synchroniser les stats
-      await loadTransactions(refresh: true);
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;
@@ -179,8 +175,6 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
         transactions: updatedTransactions,
         isLoading: false,
       );
-      // Auto-refresh pour mettre à jour les stats du client
-      await loadTransactions(refresh: true);
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;
@@ -197,8 +191,6 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
             .toList(),
         isLoading: false,
       );
-      // Auto-refresh pour synchroniser la pagination
-      await loadTransactions(refresh: true);
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;
