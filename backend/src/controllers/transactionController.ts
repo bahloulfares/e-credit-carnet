@@ -1,7 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import transactionService from '../services/transactionService';
-import logger from '../utils/logger';import { convertDecimalsToNumbers } from '../utils/decimal';
+import logger from '../utils/logger';
+import { convertDecimalsToNumbers } from '../utils/decimal';
 export class TransactionController {
   async createTransaction(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -157,36 +158,6 @@ export class TransactionController {
     }
   }
 
-  async markAsPaid(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
-      const { id } = req.params;
-      const { paymentMethod } = req.body;
-
-      const transaction = await transactionService.markAsPaid(
-        id,
-        req.user.id,
-        paymentMethod,
-      );
-
-      logger.info(`Transaction marked as paid: ${id}`);
-      res.status(200).json({
-        message: 'Transaction marked as paid',
-        transaction: convertDecimalsToNumbers(transaction),
-      });
-    } catch (error) {
-      logger.error('Mark as paid error:', error);
-      if (error instanceof Error && error.message === 'Transaction not found') {
-        res.status(404).json({ error: 'Transaction not found' });
-      } else {
-        res.status(500).json({ error: 'Failed to mark transaction as paid' });
-      }
-    }
-  }
 }
 
 export default new TransactionController();

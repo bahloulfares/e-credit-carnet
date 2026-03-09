@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/client_provider.dart';
 import '../providers/auth_provider.dart';
@@ -14,6 +15,8 @@ class ClientsScreen extends ConsumerStatefulWidget {
 class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   late TextEditingController _searchController;
   late final ScrollController _scrollController;
+  Timer? _searchDebounce;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -24,7 +27,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    if (_searchController.text.isNotEmpty) return;
+    if (_searchQuery.isNotEmpty) return;
 
     final position = _scrollController.position;
     if (position.pixels >= position.maxScrollExtent - 200) {
@@ -34,6 +37,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
@@ -44,11 +48,9 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   @override
   Widget build(BuildContext context) {
     final clientListState = ref.watch(clientListProvider);
-    final searchResults = ref.watch(
-      searchClientsProvider(_searchController.text),
-    );
+    final searchResults = ref.watch(searchClientsProvider(_searchQuery));
 
-    final displayClients = _searchController.text.isEmpty
+    final displayClients = _searchQuery.isEmpty
         ? clientListState.clients
         : searchResults.value ?? [];
 
@@ -81,8 +83,10 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
+                          _searchDebounce?.cancel();
                           setState(() {
                             _searchController.clear();
+                            _searchQuery = '';
                           });
                         },
                       )
@@ -93,11 +97,18 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
               ),
               onChanged: (value) {
                 setState(() {});
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                  if (!mounted) return;
+                  setState(() {
+                    _searchQuery = value.trim();
+                  });
+                });
               },
             ),
           ),
           Expanded(
-            child: _searchController.text.isEmpty
+            child: _searchQuery.isEmpty
                 ? clientListState.isLoading && clientListState.clients.isEmpty
                       ? const Center(child: CircularProgressIndicator())
                       : displayClients.isEmpty
@@ -159,15 +170,13 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                                   arguments: client.id,
                                 );
                                 if (!mounted) return;
-                                if (_searchController.text.isEmpty) {
+                                if (_searchQuery.isEmpty) {
                                   await ref
                                       .read(clientListProvider.notifier)
                                       .loadClients(refresh: true);
                                 } else {
                                   ref.invalidate(
-                                    searchClientsProvider(
-                                      _searchController.text,
-                                    ),
+                                    searchClientsProvider(_searchQuery),
                                   );
                                 }
                               },
@@ -206,15 +215,13 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                                     arguments: client.id,
                                   );
                                   if (!mounted) return;
-                                  if (_searchController.text.isEmpty) {
+                                  if (_searchQuery.isEmpty) {
                                     await ref
                                         .read(clientListProvider.notifier)
                                         .loadClients(refresh: true);
                                   } else {
                                     ref.invalidate(
-                                      searchClientsProvider(
-                                        _searchController.text,
-                                      ),
+                                      searchClientsProvider(_searchQuery),
                                     );
                                   }
                                 },
