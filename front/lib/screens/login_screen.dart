@@ -32,10 +32,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _login() async {
     final authNotifier = ref.read(authStateProvider.notifier);
 
+    // Validation locale
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez remplir tous les champs')),
+      );
+      return;
+    }
+
+    // Validation format email
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(_emailController.text)) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+      ).showSnackBar(const SnackBar(content: Text('Format d\'email invalide')));
       return;
     }
 
@@ -78,7 +88,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const Icon(Icons.store, size: 80, color: Colors.blue),
               const SizedBox(height: 24),
               const Text(
-                'Login to Your Account',
+                'Connexion à votre compte',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 32),
@@ -86,22 +96,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 controller: _emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
+                  hintText: 'exemple@email.com',
                   prefixIcon: const Icon(Icons.email),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  errorText: authState.error != null
-                      ? 'Invalid credentials'
-                      : null,
                 ),
                 keyboardType: TextInputType.emailAddress,
                 enabled: !authState.isLoading,
+                onSubmitted: (_) => _login(),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
                 decoration: InputDecoration(
-                  labelText: 'Password',
+                  labelText: 'Mot de passe',
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -121,8 +130,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 obscureText: _obscurePassword,
                 enabled: !authState.isLoading,
+                onSubmitted: (_) => _login(),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: authState.isLoading
+                      ? null
+                      : () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Contactez votre administrateur pour réinitialiser le mot de passe',
+                              ),
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                        },
+                  child: const Text(
+                    'Mot de passe oublié ?',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -132,9 +164,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ? const SizedBox(
                           height: 24,
                           width: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
-                      : const Text('Login'),
+                      : const Text(
+                          'Se connecter',
+                          style: TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -144,7 +182,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     : () {
                         Navigator.of(context).pushNamed(Routes.register);
                       },
-                child: const Text('Don\'t have an account? Register'),
+                child: const Text('Pas de compte ? S\'inscrire'),
               ),
               if (authState.error != null)
                 Padding(

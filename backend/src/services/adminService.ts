@@ -329,6 +329,95 @@ class AdminService {
 
     return { id: epicierId };
   }
+
+  async createEpicier(data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    password: string;
+    phone?: string;
+    shopName?: string;
+  }) {
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email },
+      select: { id: true },
+    });
+
+    if (existingUser) {
+      throw new ApiError(400, 'Email already exists');
+    }
+
+    const password = await hashPassword(data.password);
+
+    const newEpicier = await prisma.user.create({
+      data: {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        password,
+        phone: data.phone,
+        shopName: data.shopName,
+        role: 'EPICIER',
+        isActive: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        shopName: true,
+        isActive: true,
+        subscriptionStatus: true,
+        createdAt: true,
+      },
+    });
+
+    return newEpicier;
+  }
+
+  async updateEpicier(
+    epicierId: string,
+    data: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      shopName?: string;
+    },
+  ) {
+    const epicier = await prisma.user.findFirst({
+      where: { id: epicierId, role: 'EPICIER' },
+      select: { id: true },
+    });
+
+    if (!epicier) {
+      throw new ApiError(404, 'Epicier not found');
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: epicierId },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        shopName: data.shopName,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        shopName: true,
+        isActive: true,
+        subscriptionStatus: true,
+        createdAt: true,
+      },
+    });
+
+    return updated;
+  }
 }
 
 export default new AdminService();

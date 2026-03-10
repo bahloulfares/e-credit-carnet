@@ -119,6 +119,76 @@ class AdminController {
       res.status(500).json({ error: 'Failed to reset epicier password' });
     }
   }
+
+  async createEpicier(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { email, firstName, lastName, password, phone, shopName } = req.body;
+
+      // Validation
+      if (!email || !firstName || !lastName || !password) {
+        res.status(400).json({ error: 'email, firstName, lastName, and password are required' });
+        return;
+      }
+
+      if (password.length < 8) {
+        res.status(400).json({ error: 'password must be at least 8 characters' });
+        return;
+      }
+
+      const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({ error: 'Invalid email format' });
+        return;
+      }
+
+      const newEpicier = await adminService.createEpicier({
+        email,
+        firstName,
+        lastName,
+        password,
+        phone,
+        shopName,
+      });
+
+      res.status(201).json({
+        message: 'Epicier created successfully',
+        epicier: newEpicier,
+      });
+    } catch (error) {
+      logger.error('Admin create epicier error:', error);
+      if (error instanceof Error && error.message.includes('already exists')) {
+        res.status(400).json({ error: 'Email already exists' });
+        return;
+      }
+      res.status(500).json({ error: 'Failed to create epicier' });
+    }
+  }
+
+  async updateEpicier(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { firstName, lastName, phone, shopName } = req.body;
+
+      const updated = await adminService.updateEpicier(id, {
+        firstName,
+        lastName,
+        phone,
+        shopName,
+      });
+
+      res.status(200).json({
+        message: 'Epicier updated successfully',
+        epicier: updated,
+      });
+    } catch (error) {
+      logger.error('Admin update epicier error:', error);
+      if (error instanceof Error && error.message.includes('not found')) {
+        res.status(404).json({ error: 'Epicier not found' });
+        return;
+      }
+      res.status(500).json({ error: 'Failed to update epicier' });
+    }
+  }
 }
 
 export default new AdminController();

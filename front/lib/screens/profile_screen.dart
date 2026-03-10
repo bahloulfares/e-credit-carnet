@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -183,6 +184,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   decoration: const InputDecoration(labelText: 'Shop Phone'),
                 ),
                 const SizedBox(height: 24),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.dark_mode),
+                    title: const Text('Thème sombre'),
+                    trailing: Switch(
+                      value: ref.watch(themeProvider) == ThemeMode.dark,
+                      onChanged: (value) {
+                        ref
+                            .read(themeProvider.notifier)
+                            .setTheme(value ? ThemeMode.dark : ThemeMode.light);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(

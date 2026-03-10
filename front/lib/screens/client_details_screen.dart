@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/client_provider.dart';
 import '../providers/transaction_provider.dart';
+import '../providers/dashboard_provider.dart';
 import '../constants/app_constants.dart';
 
 class ClientDetailsScreen extends ConsumerStatefulWidget {
@@ -203,9 +204,11 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     String amountValue = '';
     String descriptionValue = '';
     String? paymentMethod;
+    bool isSubmitting = false;
 
     final result = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -303,46 +306,65 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
+                  onPressed: isSubmitting
+                      ? null
+                      : () => Navigator.of(context).pop(false),
                   child: const Text('Annuler'),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
-                    if (!formKey.currentState!.validate()) {
-                      return;
-                    }
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) {
+                            return;
+                          }
 
-                    final navigator = Navigator.of(dialogContext);
-                    final messenger = ScaffoldMessenger.of(context);
+                          setDialogState(() {
+                            isSubmitting = true;
+                          });
 
-                    try {
-                      await ref
-                          .read(transactionListProvider(clientId).notifier)
-                          .createTransaction(
-                            clientId: clientId,
-                            type: type,
-                            amount: double.parse(amountValue),
-                            description: descriptionValue.trim().isEmpty
-                                ? null
-                                : descriptionValue.trim(),
-                            paymentMethod: type == 'PAYMENT'
-                                ? paymentMethod
-                                : null,
-                          );
+                          final navigator = Navigator.of(dialogContext);
+                          final messenger = ScaffoldMessenger.of(context);
 
-                      if (navigator.canPop()) {
-                        navigator.pop(true);
-                      }
-                    } catch (e) {
-                      if (navigator.canPop()) {
-                        navigator.pop(false);
-                      }
-                      messenger.showSnackBar(
-                        SnackBar(content: Text('Erreur: $e')),
-                      );
-                    }
-                  },
-                  child: const Text('Enregistrer'),
+                          try {
+                            await ref
+                                .read(
+                                  transactionListProvider(clientId).notifier,
+                                )
+                                .createTransaction(
+                                  clientId: clientId,
+                                  type: type,
+                                  amount: double.parse(amountValue),
+                                  description: descriptionValue.trim().isEmpty
+                                      ? null
+                                      : descriptionValue.trim(),
+                                  paymentMethod: type == 'PAYMENT'
+                                      ? paymentMethod
+                                      : null,
+                                );
+
+                            if (navigator.canPop()) {
+                              navigator.pop(true);
+                            }
+                          } catch (e) {
+                            setDialogState(() {
+                              isSubmitting = false;
+                            });
+                            messenger.showSnackBar(
+                              SnackBar(content: Text('Erreur: $e')),
+                            );
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Enregistrer'),
                 ),
               ],
             );
@@ -353,8 +375,9 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
 
     if (result == true) {
       if (!mounted) return;
-      // Rafraîchir les stats du client
+      // Rafraîchir les stats du client ET le dashboard
       ref.invalidate(clientDetailsProvider(widget.clientId));
+      ref.invalidate(dashboardStatsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Transaction ajoutée avec succès')),
       );

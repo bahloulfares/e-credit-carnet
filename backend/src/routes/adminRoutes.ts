@@ -8,7 +8,9 @@ router.use(authMiddleware, adminMiddleware);
 
 router.get('/stats', (req, res) => adminController.getGlobalStats(req, res));
 router.get('/epiciers', (req, res) => adminController.getEpiciers(req, res));
+router.post('/epiciers', (req, res) => adminController.createEpicier(req, res));
 router.get('/epiciers/:id', (req, res) => adminController.getEpicierById(req, res));
+router.patch('/epiciers/:id', (req, res) => adminController.updateEpicier(req, res));
 router.get('/epiciers/:id/clients', (req, res) =>
   adminController.getEpicierClients(req, res),
 );

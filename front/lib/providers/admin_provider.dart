@@ -131,4 +131,56 @@ class AdminEpiciersNotifier extends StateNotifier<AdminEpiciersState> {
       rethrow;
     }
   }
+
+  Future<AdminEpicier> createEpicier({
+    required String email,
+    required String firstName,
+    required String lastName,
+    required String password,
+    String? phone,
+    String? shopName,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final newEpicier = await adminService.createEpicier(
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+        password: password,
+        phone: phone,
+        shopName: shopName,
+      );
+      // Auto-refresh après création
+      await loadEpiciers(search: state.search, refresh: true);
+      return newEpicier;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<AdminEpicier> updateEpicier({
+    required String epicierId,
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? shopName,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final updated = await adminService.updateEpicier(
+        epicierId,
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        shopName: shopName,
+      );
+      // Auto-refresh après modification
+      await loadEpiciers(search: state.search, refresh: true);
+      return updated;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
 }

@@ -179,4 +179,79 @@ class AdminService {
       throw _mapException(e);
     }
   }
+
+  Future<AdminEpicier> createEpicier({
+    required String email,
+    required String firstName,
+    required String lastName,
+    required String password,
+    String? phone,
+    String? shopName,
+  }) async {
+    try {
+      final response = await httpClient
+          .post(
+            Uri.parse('$endpoint/epiciers'),
+            headers: _headers(),
+            body: jsonEncode({
+              'email': email,
+              'firstName': firstName,
+              'lastName': lastName,
+              'password': password,
+              if (phone != null && phone.isNotEmpty) 'phone': phone,
+              if (shopName != null && shopName.isNotEmpty) 'shopName': shopName,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 201) {
+        throw ApiException(
+          message:
+              jsonDecode(response.body)['error'] ?? 'Failed to create epicier',
+          statusCode: response.statusCode,
+        );
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return AdminEpicier.fromJson(data['epicier'] as Map<String, dynamic>);
+    } catch (e) {
+      throw _mapException(e);
+    }
+  }
+
+  Future<AdminEpicier> updateEpicier(
+    String id, {
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? shopName,
+  }) async {
+    try {
+      final response = await httpClient
+          .patch(
+            Uri.parse('$endpoint/epiciers/$id'),
+            headers: _headers(),
+            body: jsonEncode({
+              if (firstName != null) 'firstName': firstName,
+              if (lastName != null) 'lastName': lastName,
+              if (phone != null) 'phone': phone,
+              if (shopName != null) 'shopName': shopName,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          message:
+              jsonDecode(response.body)['error'] ?? 'Failed to update epicier',
+          statusCode: response.statusCode,
+        );
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return AdminEpicier.fromJson(data['epicier'] as Map<String, dynamic>);
+    } catch (e) {
+      throw _mapException(e);
+    }
+  }
 }

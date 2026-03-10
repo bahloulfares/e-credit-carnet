@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/transaction_provider.dart';
+import '../providers/dashboard_provider.dart';
 import '../models/transaction_model.dart';
 
 class TransactionsScreen extends ConsumerStatefulWidget {
@@ -141,9 +142,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     String type = 'CREDIT';
     String amountValue = '';
     String descriptionValue = '';
+    bool isSubmitting = false;
 
     await showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -202,44 +205,78 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: isSubmitting
+                      ? null
+                      : () => Navigator.of(context).pop(),
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
-                    if (!formKey.currentState!.validate()) {
-                      return;
-                    }
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) {
+                            return;
+                          }
 
-                    try {
-                      await ref
-                          .read(
-                            transactionListProvider(widget.clientId).notifier,
-                          )
-                          .createTransaction(
-                            clientId: widget.clientId,
-                            type: type,
-                            amount: double.parse(amountValue),
-                            description: descriptionValue.trim().isEmpty
-                                ? null
-                                : descriptionValue.trim(),
-                          );
+                          setDialogState(() {
+                            isSubmitting = true;
+                          });
 
-                      if (!mounted) return;
-                      if (!dialogContext.mounted) return;
-                      if (Navigator.of(dialogContext).canPop()) {
-                        Navigator.of(dialogContext).pop();
-                      }
-                    } catch (e) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(this.context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to create transaction: $e'),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Save'),
+                          try {
+                            await ref
+                                .read(
+                                  transactionListProvider(
+                                    widget.clientId,
+                                  ).notifier,
+                                )
+                                .createTransaction(
+                                  clientId: widget.clientId,
+                                  type: type,
+                                  amount: double.parse(amountValue),
+                                  description: descriptionValue.trim().isEmpty
+                                      ? null
+                                      : descriptionValue.trim(),
+                                );
+
+                            if (!mounted) return;
+                            ref.invalidate(dashboardStatsProvider);
+
+                            if (!dialogContext.mounted) return;
+                            if (Navigator.of(dialogContext).canPop()) {
+                              Navigator.of(dialogContext).pop();
+                            }
+
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Transaction ajoutée avec succès',
+                                ),
+                              ),
+                            );
+                          } catch (e) {
+                            setDialogState(() {
+                              isSubmitting = false;
+                            });
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Failed to create transaction: $e',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Save'),
                 ),
               ],
             );
