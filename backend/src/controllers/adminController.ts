@@ -135,7 +135,7 @@ class AdminController {
         return;
       }
 
-      const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+      const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
       if (!emailRegex.test(email)) {
         res.status(400).json({ error: 'Invalid email format' });
         return;

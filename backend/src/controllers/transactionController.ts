@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { TransactionType } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import transactionService from '../services/transactionService';
 import logger from '../utils/logger';
@@ -60,6 +61,8 @@ export class TransactionController {
       const { clientId, type, isPaid } = req.query;
       const skip = parseInt(req.query.skip as string) || 0;
       const take = parseInt(req.query.take as string) || 20;
+      const month = req.query.month ? parseInt(req.query.month as string) : undefined;
+      const year = req.query.year ? parseInt(req.query.year as string) : undefined;
 
       const transactions = await transactionService.listTransactions(
         req.user.id,
@@ -67,8 +70,10 @@ export class TransactionController {
         {
           skip,
           take,
-          type: type as any,
+          type: type as TransactionType | undefined,
           isPaid: isPaid === 'true' ? true : isPaid === 'false' ? false : undefined,
+          month,
+          year,
         },
       );
 

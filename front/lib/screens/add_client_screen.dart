@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/client_provider.dart';
 import '../services/api_client.dart';
 
@@ -74,30 +75,33 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
   }
 
   String _friendlyErrorMessage(Object error) {
+    final l10n = context.l10n;
+
     if (error is ApiException) {
       if (error.statusCode == 401) {
-        return 'Session expirée. Veuillez vous reconnecter.';
+        return l10n.t('sessionExpired');
       }
       if (error.statusCode == 403) {
-        return 'Accès refusé pour ce rôle.';
+        return l10n.t('roleAccessDenied');
       }
       if (error.statusCode == 409) {
-        return 'Un client similaire existe déjà.';
+        return l10n.t('similarClientExists');
       }
       if (error.message.isNotEmpty) {
         return error.message;
       }
     }
 
-    return 'Impossible de créer le client pour le moment. Réessayez.';
+    return l10n.t('createClientFailed');
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(clientListProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Client'), centerTitle: true),
+      appBar: AppBar(title: Text(l10n.t('addClient')), centerTitle: true),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -107,10 +111,10 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
               children: [
                 TextFormField(
                   controller: _firstNameController,
-                  decoration: const InputDecoration(labelText: 'First Name *'),
+                  decoration: InputDecoration(labelText: l10n.t('firstName')),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'First name is required';
+                      return l10n.t('firstNameRequired');
                     }
                     return null;
                   },
@@ -118,10 +122,10 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _lastNameController,
-                  decoration: const InputDecoration(labelText: 'Last Name *'),
+                  decoration: InputDecoration(labelText: l10n.t('lastName')),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Last name is required';
+                      return l10n.t('lastNameRequired');
                     }
                     return null;
                   },
@@ -129,19 +133,19 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(labelText: 'Phone'),
+                  decoration: InputDecoration(labelText: l10n.t('phone')),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  decoration: InputDecoration(labelText: l10n.t('email')),
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _addressController,
-                  decoration: const InputDecoration(labelText: 'Address'),
+                  decoration: InputDecoration(labelText: l10n.t('address')),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 24),
@@ -155,7 +159,7 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Save Client'),
+                        : Text(l10n.t('saveClient')),
                   ),
                 ),
               ],

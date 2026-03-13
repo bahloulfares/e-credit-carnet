@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/client_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/dashboard_provider.dart';
@@ -19,17 +20,18 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final clientAsync = ref.watch(clientDetailsProvider(widget.clientId));
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Client Details'),
+        title: Text(l10n.t('clientDetails')),
         centerTitle: true,
         actions: [
           clientAsync.when(
             data: (client) => IconButton(
               tooltip: client.isActive
-                  ? 'Désactiver (non-paiement)'
-                  : 'Réactiver',
+                  ? l10n.t('deactivateClient')
+                  : l10n.t('reactivateClient'),
               icon: Icon(
                 client.isActive ? Icons.person_off : Icons.person,
                 color: client.isActive ? Colors.red : Colors.green,
@@ -60,10 +62,21 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      if (!client.isActive)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            l10n.t('inactive'),
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 8),
-                      Text('Phone: ${client.phone ?? 'N/A'}'),
-                      Text('Email: ${client.email ?? 'N/A'}'),
-                      Text('Address: ${client.address ?? 'N/A'}'),
+                      Text('${l10n.t('phone')}: ${client.phone ?? '-'}'),
+                      Text('${l10n.t('email')}: ${client.email ?? '-'}'),
+                      Text('${l10n.t('address')}: ${client.address ?? '-'}'),
                     ],
                   ),
                 ),
@@ -75,26 +88,26 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Financial Summary',
-                        style: TextStyle(
+                      Text(
+                        l10n.t('financialSummary'),
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 12),
                       _SummaryRow(
-                        title: 'Total Credit',
+                        title: l10n.t('clientTotalCredit'),
                         value: '${client.totalCredit.toStringAsFixed(2)} DT',
                         color: Colors.green,
                       ),
                       _SummaryRow(
-                        title: 'Total Payment',
+                        title: l10n.t('clientTotalPayment'),
                         value: '${client.totalPayment.toStringAsFixed(2)} DT',
                         color: Colors.blue,
                       ),
                       _SummaryRow(
-                        title: 'Current Debt',
+                        title: l10n.t('currentDebt'),
                         value: '${client.totalDebt.toStringAsFixed(2)} DT',
                         color: client.totalDebt > 0 ? Colors.red : Colors.green,
                       ),
@@ -109,7 +122,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                   onPressed: () =>
                       _showAddTransactionDialog(client.id, client.fullName),
                   icon: const Icon(Icons.add),
-                  label: const Text('Add Transaction'),
+                  label: Text(l10n.t('addTransaction')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -132,41 +145,48 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                     ref.invalidate(clientDetailsProvider(widget.clientId));
                   },
                   icon: const Icon(Icons.receipt_long),
-                  label: const Text('View All Transactions'),
+                  label: Text(l10n.t('viewAllTransactions')),
                 ),
               ),
             ],
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+        error: (error, stack) =>
+            Center(child: Text('${l10n.t('error')}: $error')),
       ),
     );
   }
 
   Future<void> _toggleClientStatus(bool currentStatus) async {
+    final l10n = context.l10n;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          currentStatus ? 'Désactiver le client ?' : 'Réactiver le client ?',
+          currentStatus
+              ? l10n.t('deactivateClient')
+              : l10n.t('reactivateClient'),
         ),
         content: Text(
           currentStatus
-              ? 'Le client ne pourra plus être sélectionné pour de nouvelles transactions.\nSes données seront conservées.'
-              : 'Le client pourra à nouveau effectuer des transactions.',
+              ? l10n.t('deactivateClientMsg')
+              : l10n.t('reactivateClientMsg'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
+            child: Text(l10n.t('cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: currentStatus ? Colors.red : Colors.green,
             ),
-            child: Text(currentStatus ? 'Désactiver' : 'Réactiver'),
+            child: Text(
+              currentStatus ? l10n.t('deactivate') : l10n.t('reactivate'),
+            ),
           ),
         ],
       ),
@@ -184,14 +204,18 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(currentStatus ? 'Client désactivé' : 'Client réactivé'),
+          content: Text(
+            currentStatus
+                ? l10n.t('clientDeactivated')
+                : l10n.t('clientReactivated'),
+          ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      ).showSnackBar(SnackBar(content: Text('${l10n.t('error')}: $e')));
     }
   }
 
@@ -199,11 +223,11 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
     String clientId,
     String clientName,
   ) async {
+    final l10n = context.l10n;
     final formKey = GlobalKey<FormState>();
     String type = 'CREDIT';
     String amountValue = '';
     String descriptionValue = '';
-    String? paymentMethod;
     bool isSubmitting = false;
 
     final result = await showDialog<bool>(
@@ -213,7 +237,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Ajouter Transaction - $clientName'),
+              title: Text('${l10n.t('addTransaction')} - $clientName'),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -222,26 +246,21 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                     children: [
                       DropdownButtonFormField<String>(
                         initialValue: type,
-                        decoration: const InputDecoration(labelText: 'Type'),
-                        items: const [
+                        decoration: InputDecoration(labelText: l10n.t('type')),
+                        items: [
                           DropdownMenuItem(
                             value: 'CREDIT',
-                            child: Text('Crédit'),
+                            child: Text(l10n.t('credit')),
                           ),
                           DropdownMenuItem(
                             value: 'PAYMENT',
-                            child: Text('Paiement'),
+                            child: Text(l10n.t('payment')),
                           ),
                         ],
                         onChanged: (value) {
                           if (value != null) {
                             setDialogState(() {
                               type = value;
-                              if (type == 'CREDIT') {
-                                paymentMethod = null;
-                              } else {
-                                paymentMethod = 'cash';
-                              }
                             });
                           }
                         },
@@ -251,51 +270,36 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        decoration: const InputDecoration(
-                          labelText: 'Montant (DT)',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('amount'),
                         ),
                         onChanged: (value) => amountValue = value,
                         validator: (value) {
                           final parsed = double.tryParse(value ?? '');
                           if (parsed == null || parsed <= 0) {
-                            return 'Entrez un montant valide';
+                            return l10n.t('amountInvalid');
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 12),
-                      if (type == 'PAYMENT') ...[
-                        DropdownButtonFormField<String>(
-                          initialValue: paymentMethod ?? 'cash',
-                          decoration: const InputDecoration(
-                            labelText: 'Méthode de paiement',
+                      if (type == 'PAYMENT')
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${l10n.t('paymentMethod')}: ${l10n.t('cash')}\n${l10n.t('cashOnlyForNow')}',
+                              style: TextStyle(
+                                color: Colors.grey[700],
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'cash',
-                              child: Text('Espèce'),
-                            ),
-                            DropdownMenuItem(value: 'D17', child: Text('D17')),
-                            DropdownMenuItem(
-                              value: 'Flouci',
-                              child: Text('Flouci'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'bank_transfer',
-                              child: Text('Virement bancaire'),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            setDialogState(() {
-                              paymentMethod = value;
-                            });
-                          },
                         ),
-                        const SizedBox(height: 12),
-                      ],
                       TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'Description (optionnel)',
+                        decoration: InputDecoration(
+                          labelText: l10n.t('description'),
                         ),
                         maxLines: 2,
                         onChanged: (value) => descriptionValue = value,
@@ -309,7 +313,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                   onPressed: isSubmitting
                       ? null
                       : () => Navigator.of(context).pop(false),
-                  child: const Text('Annuler'),
+                  child: Text(l10n.t('cancel')),
                 ),
                 ElevatedButton(
                   onPressed: isSubmitting
@@ -339,7 +343,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                                       ? null
                                       : descriptionValue.trim(),
                                   paymentMethod: type == 'PAYMENT'
-                                      ? paymentMethod
+                                      ? 'cash'
                                       : null,
                                 );
 
@@ -351,7 +355,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                               isSubmitting = false;
                             });
                             messenger.showSnackBar(
-                              SnackBar(content: Text('Erreur: $e')),
+                              SnackBar(content: Text('${l10n.t('error')}: $e')),
                             );
                           }
                         },
@@ -364,7 +368,7 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Enregistrer'),
+                      : Text(l10n.t('save')),
                 ),
               ],
             );
@@ -378,9 +382,9 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       // Rafraîchir les stats du client ET le dashboard
       ref.invalidate(clientDetailsProvider(widget.clientId));
       ref.invalidate(dashboardStatsProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transaction ajoutée avec succès')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('transactionAdded'))));
     }
   }
 }

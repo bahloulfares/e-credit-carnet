@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { query, validationResult } from 'express-validator';
 import transactionController from '../controllers/transactionController';
 import { authMiddleware, epicierOrAdminMiddleware } from '../middleware/auth';
@@ -20,9 +20,17 @@ const transactionListValidation = [
 		.optional()
 		.isIn(['true', 'false'])
 		.withMessage('isPaid must be true or false'),
+	query('month')
+		.optional()
+		.isInt({ min: 1, max: 12 })
+		.withMessage('month must be between 1 and 12'),
+	query('year')
+		.optional()
+		.isInt({ min: 2000, max: 2100 })
+		.withMessage('year must be between 2000 and 2100'),
 ];
 
-const validateRequest = (req: any, res: any, next: any): void => {
+const validateRequest = (req: Request, res: Response, next: NextFunction): void => {
 	const errors = validationResult(req);
 
 	if (!errors.isEmpty()) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/client_provider.dart';
 import '../providers/auth_provider.dart';
 import '../constants/app_constants.dart';
@@ -49,6 +50,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   Widget build(BuildContext context) {
     final clientListState = ref.watch(clientListProvider);
     final searchResults = ref.watch(searchClientsProvider(_searchQuery));
+    final l10n = context.l10n;
 
     final displayClients = _searchQuery.isEmpty
         ? clientListState.clients
@@ -56,7 +58,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Clients'),
+        title: Text(l10n.t('clients')),
         centerTitle: true,
         actions: [
           IconButton(
@@ -77,7 +79,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Search clients...',
+                labelText: l10n.t('searchClients'),
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -112,11 +114,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 ? clientListState.isLoading && clientListState.clients.isEmpty
                       ? const Center(child: CircularProgressIndicator())
                       : displayClients.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No clients found. Add one to get started!',
-                          ),
-                        )
+                      ? Center(child: Text(l10n.t('noClients')))
                       : ListView.builder(
                           controller: _scrollController,
                           itemCount:
@@ -135,10 +133,12 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                                   ),
                                 );
                               }
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 16),
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 child: Center(
-                                  child: Text('Fin de la liste des clients'),
+                                  child: Text(l10n.t('endOfClientList')),
                                 ),
                               );
                             }
@@ -152,9 +152,9 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(client.phone ?? 'No phone'),
+                                  Text(client.phone ?? l10n.t('noPhone')),
                                   Text(
-                                    'Debt: ${client.totalDebt} DT',
+                                    '${l10n.t('debt')}: ${client.totalDebt.toStringAsFixed(2)} DT',
                                     style: TextStyle(
                                       color: client.totalDebt > 0
                                           ? Colors.red
@@ -185,7 +185,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                         )
                 : searchResults.when(
                     data: (clients) => clients.isEmpty
-                        ? const Center(child: Text('No results found'))
+                        ? Center(child: Text(l10n.t('noResults')))
                         : ListView.builder(
                             itemCount: clients.length,
                             itemBuilder: (context, index) {
@@ -198,9 +198,9 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(client.phone ?? 'No phone'),
+                                    Text(client.phone ?? l10n.t('noPhone')),
                                     Text(
-                                      'Debt: ${client.totalDebt} DT',
+                                      '${l10n.t('debt')}: ${client.totalDebt.toStringAsFixed(2)} DT',
                                       style: TextStyle(
                                         color: client.totalDebt > 0
                                             ? Colors.red
@@ -231,7 +231,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (error, stack) =>
-                        Center(child: Text('Error: $error')),
+                        Center(child: Text('${l10n.t('error')}: $error')),
                   ),
           ),
         ],

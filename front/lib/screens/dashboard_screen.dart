@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/dashboard_provider.dart';
 import '../widgets/app_drawer.dart';
 
@@ -34,9 +35,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(dashboardStatsProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard'), centerTitle: true),
+      appBar: AppBar(title: Text(l10n.t('dashboard')), centerTitle: true),
       drawer: const AppDrawer(),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -59,26 +61,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     crossAxisSpacing: 16,
                     children: [
                       _StatCard(
-                        title: 'Total Clients',
+                        title: l10n.t('totalClients'),
                         value: stats.totalClients.toString(),
                         icon: Icons.people,
                         color: Colors.blue,
                       ),
                       _StatCard(
-                        title: 'Total Debt',
-                        value: '${stats.totalDebt} DT',
+                        title: l10n.t('totalDebt'),
+                        value: '${stats.totalDebt.toStringAsFixed(2)} DT',
                         icon: Icons.money_off,
                         color: Colors.red,
                       ),
                       _StatCard(
-                        title: 'Total Credit',
-                        value: '${stats.totalCredit} DT',
+                        title: l10n.t('totalCredit'),
+                        value: '${stats.totalCredit.toStringAsFixed(2)} DT',
                         icon: Icons.trending_up,
                         color: Colors.green,
                       ),
                       _StatCard(
-                        title: 'Total Payment',
-                        value: '${stats.totalPayment} DT',
+                        title: l10n.t('totalPayment'),
+                        value: '${stats.totalPayment.toStringAsFixed(2)} DT',
                         icon: Icons.payment,
                         color: Colors.orange,
                       ),
@@ -92,28 +94,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'This Month',
-                            style: TextStyle(
+                          Text(
+                            l10n.t('thisMonth'),
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 16),
                           _MonthlyStatRow(
-                            label: 'Transactions',
+                            label: l10n.t('transactions'),
                             value: stats.monthlyTransactions.toString(),
                           ),
                           const Divider(height: 20),
                           _MonthlyStatRow(
-                            label: 'Credit',
+                            label: l10n.t('credits'),
                             value:
                                 '${stats.monthlyCredit.toStringAsFixed(2)} DT',
                             valueColor: Colors.green,
                           ),
                           const Divider(height: 20),
                           _MonthlyStatRow(
-                            label: 'Payment',
+                            label: l10n.t('payments'),
                             value:
                                 '${stats.monthlyPayment.toStringAsFixed(2)} DT',
                             valueColor: Colors.blue,
@@ -128,9 +130,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Recent Transactions',
-                          style: TextStyle(
+                        Text(
+                          l10n.t('recentTransactions'),
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -153,7 +155,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               title: Text(tx.client.fullName),
                               subtitle: Text(tx.type),
                               trailing: Text(
-                                '${tx.amount} DT',
+                                '${tx.amount.toStringAsFixed(2)} DT',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: tx.type == 'CREDIT'
@@ -175,7 +177,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   children: [
                     const Icon(Icons.error, size: 64, color: Colors.red),
                     const SizedBox(height: 16),
-                    Text('Error: $error'),
+                    Text('${l10n.t('error')}: $error'),
                   ],
                 ),
               ),

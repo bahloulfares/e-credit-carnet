@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'l10n/app_localizations.dart';
+import 'providers/locale_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -7,7 +9,7 @@ import 'screens/clients_screen.dart';
 import 'screens/add_client_screen.dart';
 import 'screens/client_details_screen.dart';
 import 'screens/transactions_screen.dart';
-import 'screens/admin_epiciers_screen.dart';
+import 'screens/admin_main_screen.dart';
 import 'screens/profile_screen.dart';
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
@@ -24,9 +26,13 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
+    final locale = ref.watch(localeProvider);
 
     return MaterialApp(
-      title: 'ProCreditApp',
+      title: 'ProCrédit',
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       themeMode: themeMode,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
@@ -76,7 +82,7 @@ class MyApp extends ConsumerWidget {
         Routes.dashboard: (context) => const AuthGateScreen(),
         Routes.clients: (context) => const ClientsScreen(),
         Routes.addClient: (context) => const AddClientScreen(),
-        Routes.adminEpiciers: (context) => const AdminEpiciersScreen(),
+        Routes.adminEpiciers: (context) => const AdminMainScreen(),
         Routes.profile: (context) => const ProfileScreen(),
       },
       onGenerateRoute: (settings) {
@@ -84,8 +90,8 @@ class MyApp extends ConsumerWidget {
           final clientId = settings.arguments as String?;
           if (clientId == null || clientId.isEmpty) {
             return MaterialPageRoute(
-              builder: (_) => const Scaffold(
-                body: Center(child: Text('Client ID is required')),
+              builder: (context) => Scaffold(
+                body: Center(child: Text(context.l10n.t('clientIdRequired'))),
               ),
             );
           }
@@ -101,9 +107,9 @@ class MyApp extends ConsumerWidget {
 
           if (clientId == null || clientName == null) {
             return MaterialPageRoute(
-              builder: (_) => const Scaffold(
+              builder: (context) => Scaffold(
                 body: Center(
-                  child: Text('Client ID and name required for transactions'),
+                  child: Text(context.l10n.t('clientIdAndNameRequired')),
                 ),
               ),
             );
@@ -130,14 +136,14 @@ class AuthGateScreen extends ConsumerWidget {
 
     // Show loading during initialization
     if (authState.isLoading && authState.user == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Chargement...'),
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(context.l10n.t('loading')),
             ],
           ),
         ),
@@ -149,7 +155,7 @@ class AuthGateScreen extends ConsumerWidget {
     }
 
     if (authState.user?.role == 'SUPER_ADMIN') {
-      return const AdminEpiciersScreen();
+      return const AdminMainScreen();
     }
 
     return const DashboardScreen();

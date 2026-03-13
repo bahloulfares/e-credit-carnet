@@ -227,16 +227,17 @@ class AdminService {
     String? shopName,
   }) async {
     try {
+      final payload = <String, String>{};
+      if (firstName != null) payload['firstName'] = firstName;
+      if (lastName != null) payload['lastName'] = lastName;
+      if (phone != null) payload['phone'] = phone;
+      if (shopName != null) payload['shopName'] = shopName;
+
       final response = await httpClient
           .patch(
             Uri.parse('$endpoint/epiciers/$id'),
             headers: _headers(),
-            body: jsonEncode({
-              if (firstName != null) 'firstName': firstName,
-              if (lastName != null) 'lastName': lastName,
-              if (phone != null) 'phone': phone,
-              if (shopName != null) 'shopName': shopName,
-            }),
+            body: jsonEncode(payload),
           )
           .timeout(const Duration(seconds: 30));
 

@@ -1,0 +1,354 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+export 'package:flutter_localizations/flutter_localizations.dart';
+
+/// Simple dual-language localizations (FR + AR).
+/// Usage: AppLocalizations.of(context).t('key')
+/// Or via extension: context.l10n.t('key')
+class AppLocalizations {
+  final Locale locale;
+
+  AppLocalizations(this.locale);
+
+  static AppLocalizations of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+        AppLocalizations(const Locale('fr'));
+  }
+
+  bool get isAr => locale.languageCode == 'ar';
+
+  static const delegate = _AppLocalizationsDelegate();
+
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = [
+    _AppLocalizationsDelegate(),
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ];
+
+  static const List<Locale> supportedLocales = [Locale('fr'), Locale('ar')];
+
+  // ─── All strings ────────────────────────────────────────────────────────────
+
+  static const _fr = <String, String>{
+    // General
+    'appTitle': 'ProCrédit',
+    'error': 'Erreur',
+    'cancel': 'Annuler',
+    'save': 'Enregistrer',
+    'confirm': 'Confirmer',
+    'yes': 'Oui',
+    'no': 'Non',
+    'loading': 'Chargement...',
+    'retry': 'Réessayer',
+    'success': 'Succès',
+    'clientIdRequired': 'ID client requis',
+    'clientIdAndNameRequired': 'ID et nom client requis pour les transactions',
+
+    // Dashboard
+    'dashboard': 'Tableau de bord',
+    'totalClients': 'Clients',
+    'totalDebt': 'Encours total',
+    'totalCredit': 'Crédits accordés',
+    'totalPayment': 'Paiements reçus',
+    'thisMonth': 'Ce mois-ci',
+    'transactions': 'Transactions',
+    'credits': 'Crédits',
+    'payments': 'Paiements',
+    'recentTransactions': 'Dernières transactions',
+
+    // Clients
+    'clients': 'Clients',
+    'searchClients': 'Rechercher un client...',
+    'noClients': 'Aucun client. Appuyez sur + pour en ajouter un.',
+    'noResults': 'Aucun résultat',
+    'noPhone': 'Pas de téléphone',
+    'debt': 'Dette',
+    'endOfClientList': 'Fin de la liste des clients',
+
+    // Client details
+    'clientDetails': 'Détails client',
+    'financialSummary': 'Résumé financier',
+    'phone': 'Téléphone',
+    'email': 'Email',
+    'address': 'Adresse',
+    'clientTotalCredit': 'Crédit total',
+    'clientTotalPayment': 'Paiement total',
+    'currentDebt': 'Dette actuelle',
+    'addTransaction': 'Ajouter une transaction',
+    'viewAllTransactions': 'Voir toutes les transactions',
+    'deactivateClient': 'Désactiver le client ?',
+    'reactivateClient': 'Réactiver le client ?',
+    'deactivateClientMsg':
+        'Le client ne pourra plus être sélectionné pour de nouvelles transactions.\nSes données seront conservées.',
+    'reactivateClientMsg':
+        'Le client pourra à nouveau effectuer des transactions.',
+    'deactivate': 'Désactiver',
+    'reactivate': 'Réactiver',
+    'clientDeactivated': 'Client désactivé',
+    'clientReactivated': 'Client réactivé',
+    'inactive': 'Inactif',
+
+    // Add client
+    'addClient': 'Ajouter un client',
+    'firstName': 'Prénom *',
+    'lastName': 'Nom *',
+    'firstNameRequired': 'Le prénom est obligatoire',
+    'lastNameRequired': 'Le nom est obligatoire',
+    'clientSaved': 'Client enregistré avec succès',
+    'saveClient': 'Enregistrer le client',
+    'sessionExpired': 'Session expirée. Veuillez vous reconnecter.',
+    'roleAccessDenied': 'Accès refusé pour ce rôle.',
+    'similarClientExists': 'Un client similaire existe déjà.',
+    'createClientFailed':
+        'Impossible de créer le client pour le moment. Réessayez.',
+
+    // Transactions
+    'transactionsOf': 'Transactions',
+    'allTypes': 'Tous',
+    'creditType': 'Crédits',
+    'paymentType': 'Paiements',
+    'noTransactionsFilter': 'Aucune transaction pour ce filtre',
+    'endOfTransactionList': 'Fin de la liste des transactions',
+    'addTransactionFab': 'Ajouter',
+    'newTransaction': 'Nouvelle transaction',
+    'credit': 'Crédit',
+    'payment': 'Paiement',
+    'amount': 'Montant (DT)',
+    'amountInvalid': 'Entrez un montant valide',
+    'description': 'Description (optionnel)',
+    'transactionAdded': 'Transaction ajoutée avec succès',
+    'transactionUpdated': 'Transaction mise à jour avec succès',
+    'transactionDeleted': 'Transaction supprimée avec succès',
+    'transactionError': 'Erreur lors de la création',
+    'updateTransactionError': 'Erreur lors de la mise à jour',
+    'deleteTransactionError': 'Erreur lors de la suppression',
+    'cash': 'Espèces',
+    'paymentMethod': 'Méthode de paiement',
+    'type': 'Type',
+    'allMonths': 'Tous les mois',
+    'allYears': 'Toutes les années',
+    'filterByPeriod': 'Filtrer par période',
+    'editTransaction': 'Modifier transaction',
+    'deleteTransaction': 'Supprimer transaction',
+    'edit': 'Modifier',
+    'delete': 'Supprimer',
+    'confirmDeleteTransaction':
+        'Voulez-vous vraiment supprimer cette transaction ?',
+
+    // Months
+    'jan': 'Janvier',
+    'feb': 'Février',
+    'mar': 'Mars',
+    'apr': 'Avril',
+    'may': 'Mai',
+    'jun': 'Juin',
+    'jul': 'Juillet',
+    'aug': 'Août',
+    'sep': 'Septembre',
+    'oct': 'Octobre',
+    'nov': 'Novembre',
+    'dec': 'Décembre',
+
+    // Drawer
+    'gestionEpiciers': 'Gestion Épiciers',
+    'profile': 'Profil',
+    'refresh': 'Rafraîchir',
+    'dataRefreshed': 'Données rafraîchies',
+    'logout': 'Déconnexion',
+    'logoutConfirm': 'Voulez-vous vraiment vous déconnecter ?',
+    'switchLanguage': 'العربية',
+    'language': 'Langue',
+    'cashOnlyForNow': 'Paiement en espèces uniquement pour le moment',
+
+    // Profile
+    'myProfile': 'Mon profil',
+
+    // Admin
+    'adminDashboard': 'Tableau de bord admin',
+    'adminEpiciers': 'Épiciers',
+  };
+
+  static const _ar = <String, String>{
+    // General
+    'appTitle': 'بروكريدي',
+    'error': 'خطأ',
+    'cancel': 'إلغاء',
+    'save': 'حفظ',
+    'confirm': 'تأكيد',
+    'yes': 'نعم',
+    'no': 'لا',
+    'loading': 'جاري التحميل...',
+    'retry': 'إعادة المحاولة',
+    'success': 'نجاح',
+    'clientIdRequired': 'مطلوب معرف العميل',
+    'clientIdAndNameRequired': 'مطلوب معرف واسم العميل لعرض المعاملات',
+
+    // Dashboard
+    'dashboard': 'لوحة التحكم',
+    'totalClients': 'العملاء',
+    'totalDebt': 'إجمالي الديون',
+    'totalCredit': 'الائتمان الممنوح',
+    'totalPayment': 'المدفوعات المستلمة',
+    'thisMonth': 'هذا الشهر',
+    'transactions': 'المعاملات',
+    'credits': 'الائتمانات',
+    'payments': 'المدفوعات',
+    'recentTransactions': 'آخر المعاملات',
+
+    // Clients
+    'clients': 'العملاء',
+    'searchClients': 'البحث عن عميل...',
+    'noClients': 'لا يوجد عملاء. اضغط + للإضافة.',
+    'noResults': 'لا توجد نتائج',
+    'noPhone': 'لا يوجد رقم هاتف',
+    'debt': 'الدين',
+    'endOfClientList': 'نهاية قائمة العملاء',
+
+    // Client details
+    'clientDetails': 'تفاصيل العميل',
+    'financialSummary': 'الملخص المالي',
+    'phone': 'الهاتف',
+    'email': 'البريد الإلكتروني',
+    'address': 'العنوان',
+    'clientTotalCredit': 'إجمالي الائتمان',
+    'clientTotalPayment': 'إجمالي المدفوعات',
+    'currentDebt': 'الدين الحالي',
+    'addTransaction': 'إضافة معاملة',
+    'viewAllTransactions': 'عرض كل المعاملات',
+    'deactivateClient': 'تعطيل العميل؟',
+    'reactivateClient': 'إعادة تفعيل العميل؟',
+    'deactivateClientMsg':
+        'لن يتمكن العميل من إجراء معاملات جديدة.\nسيتم الاحتفاظ ببياناته.',
+    'reactivateClientMsg': 'سيتمكن العميل من إجراء المعاملات مرة أخرى.',
+    'deactivate': 'تعطيل',
+    'reactivate': 'إعادة تفعيل',
+    'clientDeactivated': 'تم تعطيل العميل',
+    'clientReactivated': 'تم إعادة تفعيل العميل',
+    'inactive': 'غير نشط',
+
+    // Add client
+    'addClient': 'إضافة عميل',
+    'firstName': 'الاسم الأول *',
+    'lastName': 'اسم العائلة *',
+    'firstNameRequired': 'الاسم الأول مطلوب',
+    'lastNameRequired': 'اسم العائلة مطلوب',
+    'clientSaved': 'تم حفظ العميل بنجاح',
+    'saveClient': 'حفظ العميل',
+    'sessionExpired': 'انتهت الجلسة. يرجى تسجيل الدخول مجدداً.',
+    'roleAccessDenied': 'غير مسموح لهذا الدور.',
+    'similarClientExists': 'يوجد عميل مشابه بالفعل.',
+    'createClientFailed': 'تعذر إنشاء العميل حالياً. حاول مرة أخرى.',
+
+    // Transactions
+    'transactionsOf': 'معاملات',
+    'allTypes': 'الكل',
+    'creditType': 'ائتمانات',
+    'paymentType': 'مدفوعات',
+    'noTransactionsFilter': 'لا توجد معاملات لهذا التصفية',
+    'endOfTransactionList': 'نهاية قائمة المعاملات',
+    'addTransactionFab': 'إضافة',
+    'newTransaction': 'معاملة جديدة',
+    'credit': 'ائتمان',
+    'payment': 'دفع',
+    'amount': 'المبلغ (د.ت)',
+    'amountInvalid': 'أدخل مبلغاً صحيحاً',
+    'description': 'الوصف (اختياري)',
+    'transactionAdded': 'تمت إضافة المعاملة بنجاح',
+    'transactionUpdated': 'تم تحديث المعاملة بنجاح',
+    'transactionDeleted': 'تم حذف المعاملة بنجاح',
+    'transactionError': 'خطأ في إنشاء المعاملة',
+    'updateTransactionError': 'خطأ أثناء تحديث المعاملة',
+    'deleteTransactionError': 'خطأ أثناء حذف المعاملة',
+    'cash': 'نقداً',
+    'paymentMethod': 'طريقة الدفع',
+    'type': 'النوع',
+    'allMonths': 'كل الأشهر',
+    'allYears': 'كل السنوات',
+    'filterByPeriod': 'تصفية حسب الفترة',
+    'editTransaction': 'تعديل المعاملة',
+    'deleteTransaction': 'حذف المعاملة',
+    'edit': 'تعديل',
+    'delete': 'حذف',
+    'confirmDeleteTransaction': 'هل تريد حذف هذه المعاملة فعلاً؟',
+
+    // Months
+    'jan': 'جانفي',
+    'feb': 'فيفري',
+    'mar': 'مارس',
+    'apr': 'أفريل',
+    'may': 'ماي',
+    'jun': 'جوان',
+    'jul': 'جويليه',
+    'aug': 'أوت',
+    'sep': 'سبتمبر',
+    'oct': 'أكتوبر',
+    'nov': 'نوفمبر',
+    'dec': 'ديسمبر',
+
+    // Drawer
+    'gestionEpiciers': 'إدارة البقالين',
+    'profile': 'الملف الشخصي',
+    'refresh': 'تحديث',
+    'dataRefreshed': 'تم تحديث البيانات',
+    'logout': 'تسجيل الخروج',
+    'logoutConfirm': 'هل تريد تسجيل الخروج؟',
+    'switchLanguage': 'Français',
+    'language': 'اللغة',
+    'cashOnlyForNow': 'الدفع نقداً فقط في الوقت الحالي',
+
+    // Profile
+    'myProfile': 'ملفي الشخصي',
+
+    // Admin
+    'adminDashboard': 'لوحة تحكم المسؤول',
+    'adminEpiciers': 'البقالون',
+  };
+
+  String t(String key) {
+    final map = isAr ? _ar : _fr;
+    return map[key] ?? key;
+  }
+
+  String monthName(int month) {
+    const keys = [
+      'jan',
+      'feb',
+      'mar',
+      'apr',
+      'may',
+      'jun',
+      'jul',
+      'aug',
+      'sep',
+      'oct',
+      'nov',
+      'dec',
+    ];
+    return t(keys[month - 1]);
+  }
+}
+
+// ─── Delegate ───────────────────────────────────────────────────────────────
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => ['fr', 'ar'].contains(locale.languageCode);
+
+  @override
+  Future<AppLocalizations> load(Locale locale) async =>
+      AppLocalizations(locale);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+// ─── Extension ──────────────────────────────────────────────────────────────
+
+extension BuildContextL10n on BuildContext {
+  AppLocalizations get l10n => AppLocalizations.of(this);
+}

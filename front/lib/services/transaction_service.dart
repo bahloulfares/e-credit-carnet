@@ -41,6 +41,8 @@ class TransactionService {
     int take = 20,
     String? type,
     bool? isPaid,
+    int? month,
+    int? year,
   }) async {
     try {
       String url = '$endpoint?skip=$skip&take=$take';
@@ -52,6 +54,12 @@ class TransactionService {
       }
       if (isPaid != null) {
         url += '&isPaid=$isPaid';
+      }
+      if (month != null) {
+        url += '&month=$month';
+      }
+      if (year != null) {
+        url += '&year=$year';
       }
 
       final response = await httpClient

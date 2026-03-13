@@ -95,9 +95,11 @@ export class TransactionService {
       take?: number;
       type?: TransactionType;
       isPaid?: boolean;
+      month?: number;
+      year?: number;
     },
   ): Promise<TransactionWithClient[]> {
-    const whereClause: any = {
+    const whereClause: Prisma.TransactionWhereInput = {
       userId,
       deletedAt: null,
     };
@@ -112,6 +114,24 @@ export class TransactionService {
 
     if (options?.isPaid !== undefined) {
       whereClause.isPaid = options.isPaid;
+    }
+
+    if (options?.month || options?.year) {
+      const filterYear = options.year ?? new Date().getFullYear();
+      const filterMonth = options.month;
+
+      const startDate = filterMonth
+        ? new Date(filterYear, filterMonth - 1, 1)
+        : new Date(filterYear, 0, 1);
+
+      const endDate = filterMonth
+        ? new Date(filterYear, filterMonth, 1)
+        : new Date(filterYear + 1, 0, 1);
+
+      whereClause.transactionDate = {
+        gte: startDate,
+        lt: endDate,
+      };
     }
 
     return prisma.transaction.findMany({

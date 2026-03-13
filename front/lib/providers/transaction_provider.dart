@@ -59,10 +59,20 @@ class TransactionListState {
 class TransactionListNotifier extends StateNotifier<TransactionListState> {
   final TransactionService transactionService;
   final String? clientId;
+  String? _typeFilter;
+  int? _monthFilter;
+  int? _yearFilter;
 
   TransactionListNotifier(this.transactionService, this.clientId)
     : super(TransactionListState()) {
     loadTransactions();
+  }
+
+  Future<void> applyFilters({String? type, int? month, int? year}) async {
+    _typeFilter = type;
+    _monthFilter = month;
+    _yearFilter = year;
+    await loadTransactions(refresh: true);
   }
 
   Future<void> loadTransactions({bool refresh = false}) async {
@@ -80,6 +90,9 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
         clientId: clientId,
         skip: page * 20,
         take: 20,
+        type: _typeFilter,
+        month: _monthFilter,
+        year: _yearFilter,
       );
 
       if (refresh) {
@@ -118,7 +131,7 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
         amount: amount,
         description: description,
         dueDate: dueDate,
-        paymentMethod: paymentMethod,
+        paymentMethod: type == 'PAYMENT' ? (paymentMethod ?? 'cash') : null,
       );
       state = state.copyWith(
         transactions: [newTransaction, ...state.transactions],

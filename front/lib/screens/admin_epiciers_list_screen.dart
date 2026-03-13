@@ -3,17 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/admin_epicier_model.dart';
 import '../providers/admin_provider.dart';
 import '../services/api_client.dart';
-import '../widgets/app_drawer.dart';
 
-class AdminEpiciersScreen extends ConsumerStatefulWidget {
-  const AdminEpiciersScreen({super.key});
+class AdminEpiciersListScreen extends ConsumerStatefulWidget {
+  const AdminEpiciersListScreen({super.key});
 
   @override
-  ConsumerState<AdminEpiciersScreen> createState() =>
-      _AdminEpiciersScreenState();
+  ConsumerState<AdminEpiciersListScreen> createState() =>
+      _AdminEpiciersListScreenState();
 }
 
-class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
+class _AdminEpiciersListScreenState
+    extends ConsumerState<AdminEpiciersListScreen> {
   late final TextEditingController _searchController;
 
   @override
@@ -31,194 +31,65 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(adminEpiciersProvider);
-    final statsAsync = ref.watch(adminGlobalStatsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Gestion Épiciers',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
-      ),
-      drawer: const AppDrawer(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateEpicierDialog,
         icon: const Icon(Icons.person_add),
         label: const Text('Nouvel épicier'),
         backgroundColor: Colors.blue,
       ),
-      body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: statsAsync.when(
-                data: (stats) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      children: [
-                        _AdminStatCard(
-                          title: 'Épiciers',
-                          value:
-                              '${stats.totalEpiciers} (${stats.activeEpiciers} actifs)',
-                          icon: Icons.store,
-                          color: Colors.indigo,
-                        ),
-                        _AdminStatCard(
-                          title: 'Total Clients',
-                          value: stats.totalClients.toString(),
-                          icon: Icons.people,
-                          color: Colors.blue,
-                        ),
-                        _AdminStatCard(
-                          title: 'Total Dette',
-                          value: '${stats.totalDebt.toStringAsFixed(2)} DT',
-                          icon: Icons.money_off,
-                          color: Colors.red,
-                        ),
-                        _AdminStatCard(
-                          title: 'Total Transactions',
-                          value: stats.totalTransactions.toString(),
-                          icon: Icons.receipt_long,
-                          color: Colors.orange,
-                        ),
-                      ],
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      hintText: 'Rechercher (email, nom, boutique)',
+                      prefixIcon: Icon(Icons.search),
                     ),
-                    const SizedBox(height: 16),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'This Month (données réelles)',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            _MonthlyStatRow(
-                              label: 'Transactions',
-                              value: stats.monthlyTransactions.toString(),
-                            ),
-                            const Divider(height: 20),
-                            _MonthlyStatRow(
-                              label: 'Crédit',
-                              value:
-                                  '${stats.monthlyCredit.toStringAsFixed(2)} DT',
-                              valueColor: Colors.green,
-                            ),
-                            const Divider(height: 20),
-                            _MonthlyStatRow(
-                              label: 'Paiement',
-                              value:
-                                  '${stats.monthlyPayment.toStringAsFixed(2)} DT',
-                              valueColor: Colors.blue,
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Cumul global',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 8),
-                            _MonthlyStatRow(
-                              label: 'Total Crédit',
-                              value:
-                                  '${stats.totalCredit.toStringAsFixed(2)} DT',
-                              valueColor: Colors.green,
-                            ),
-                            const Divider(height: 20),
-                            _MonthlyStatRow(
-                              label: 'Total Paiement',
-                              value:
-                                  '${stats.totalPayment.toStringAsFixed(2)} DT',
-                              valueColor: Colors.blue,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (_, _) => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    'Impossible de charger les statistiques globales.',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: const InputDecoration(
-                        hintText: 'Rechercher (email, nom, boutique)',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                      onSubmitted: (value) {
-                        ref
-                            .read(adminEpiciersProvider.notifier)
-                            .loadEpiciers(search: value, refresh: true);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: 'Rechercher',
-                    onPressed: () {
+                    onSubmitted: (value) {
                       ref
                           .read(adminEpiciersProvider.notifier)
-                          .loadEpiciers(
-                            search: _searchController.text,
-                            refresh: true,
-                          );
+                          .loadEpiciers(search: value, refresh: true);
                     },
-                    icon: const Icon(Icons.tune),
                   ),
-                ],
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Rechercher',
+                  onPressed: () {
+                    ref
+                        .read(adminEpiciersProvider.notifier)
+                        .loadEpiciers(
+                          search: _searchController.text,
+                          refresh: true,
+                        );
+                  },
+                  icon: const Icon(Icons.tune),
+                ),
+              ],
+            ),
+          ),
+          if (state.error != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                state.error!,
+                style: const TextStyle(color: Colors.red),
               ),
             ),
-            if (state.error != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  state.error!,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ),
-            if (state.isLoading && state.epiciers.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (state.epiciers.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: Text('Aucun épicier trouvé')),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
+          if (state.isLoading && state.epiciers.isEmpty)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (state.epiciers.isEmpty)
+            const Expanded(child: Center(child: Text('Aucun épicier trouvé')))
+          else
+            Expanded(
+              child: ListView.builder(
                 itemCount:
                     state.epiciers.length +
                     (state.hasMore || state.isLoading ? 1 : 0),
@@ -248,9 +119,8 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
                   );
                 },
               ),
-            const SizedBox(height: 16),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -429,7 +299,7 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
+          builder: (_, setDialogState) {
             return AlertDialog(
               title: const Text('Créer un nouvel épicier'),
               content: Form(
@@ -541,6 +411,9 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
                           });
 
                           try {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final dialogNavigator = Navigator.of(dialogContext);
+
                             await ref
                                 .read(adminEpiciersProvider.notifier)
                                 .createEpicier(
@@ -556,11 +429,11 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
                                       : shopName.trim(),
                                 );
                             ref.invalidate(adminGlobalStatsProvider);
-                            if (!mounted) return;
-                            if (dialogContext.mounted) {
-                              Navigator.of(dialogContext).pop();
+                            if (!mounted || !dialogContext.mounted) return;
+                            if (dialogNavigator.canPop()) {
+                              dialogNavigator.pop();
                             }
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Épicier créé avec succès'),
                               ),
@@ -570,7 +443,8 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
                               isSubmitting = false;
                             });
                             if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            final messenger = ScaffoldMessenger.of(context);
+                            messenger.showSnackBar(
                               SnackBar(content: Text(_friendlyError(e))),
                             );
                           }
@@ -607,7 +481,7 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
+          builder: (_, setDialogState) {
             return AlertDialog(
               title: Text('Modifier - ${epicier.fullName}'),
               content: Form(
@@ -686,6 +560,9 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
                           });
 
                           try {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final dialogNavigator = Navigator.of(dialogContext);
+
                             await ref
                                 .read(adminEpiciersProvider.notifier)
                                 .updateEpicier(
@@ -700,11 +577,11 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
                                       : shopName.trim(),
                                 );
                             ref.invalidate(adminGlobalStatsProvider);
-                            if (!mounted) return;
-                            if (dialogContext.mounted) {
-                              Navigator.of(dialogContext).pop();
+                            if (!mounted || !dialogContext.mounted) return;
+                            if (dialogNavigator.canPop()) {
+                              dialogNavigator.pop();
                             }
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Épicier modifié avec succès'),
                               ),
@@ -714,7 +591,8 @@ class _AdminEpiciersScreenState extends ConsumerState<AdminEpiciersScreen> {
                               isSubmitting = false;
                             });
                             if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            final messenger = ScaffoldMessenger.of(context);
+                            messenger.showSnackBar(
                               SnackBar(content: Text(_friendlyError(e))),
                             );
                           }
@@ -758,141 +636,76 @@ class _EpicierTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: epicier.isActive ? Colors.green : Colors.grey,
-          child: const Icon(Icons.store, color: Colors.white),
-        ),
-        title: Text(epicier.fullName),
-        subtitle: Text(
-          '${epicier.email}\nClients: ${epicier.clientsCount} • Transactions: ${epicier.transactionsCount}',
-        ),
-        isThreeLine: true,
-        trailing: Wrap(
-          spacing: 4,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            IconButton(
-              tooltip: 'Voir les clients',
-              onPressed: onViewClients,
-              icon: const Icon(Icons.groups, size: 20),
-            ),
-            IconButton(
-              tooltip: 'Modifier les informations',
-              onPressed: onEdit,
-              icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
-            ),
-            IconButton(
-              tooltip: epicier.isActive
-                  ? 'Désactiver le compte'
-                  : 'Réactiver le compte',
-              onPressed: onToggleStatus,
-              icon: Icon(
-                epicier.isActive ? Icons.lock : Icons.lock_open,
-                color: epicier.isActive ? Colors.red : Colors.green,
-                size: 20,
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+              leading: CircleAvatar(
+                backgroundColor: epicier.isActive ? Colors.green : Colors.grey,
+                child: const Icon(Icons.store, color: Colors.white),
               ),
+              title: Text(
+                epicier.fullName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    epicier.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    'Clients: ${epicier.clientsCount} • Transactions: ${epicier.transactionsCount}',
+                  ),
+                ],
+              ),
+              isThreeLine: true,
             ),
-            IconButton(
-              tooltip: 'Reset mot de passe',
-              onPressed: onResetPassword,
-              icon: const Icon(Icons.lock_reset, size: 20),
+            Padding(
+              padding: const EdgeInsets.only(right: 4, bottom: 4),
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 2,
+                children: [
+                  IconButton(
+                    tooltip: 'Voir les clients',
+                    onPressed: onViewClients,
+                    icon: const Icon(Icons.groups, size: 20),
+                  ),
+                  IconButton(
+                    tooltip: 'Modifier les informations',
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                  ),
+                  IconButton(
+                    tooltip: epicier.isActive
+                        ? 'Désactiver le compte'
+                        : 'Réactiver le compte',
+                    onPressed: onToggleStatus,
+                    icon: Icon(
+                      epicier.isActive ? Icons.lock : Icons.lock_open,
+                      color: epicier.isActive ? Colors.red : Colors.green,
+                      size: 20,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Reset mot de passe',
+                    onPressed: onResetPassword,
+                    icon: const Icon(Icons.lock_reset, size: 20),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _AdminStatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _AdminStatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              color.withValues(alpha: 0.3),
-              color.withValues(alpha: 0.1),
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, color: color, size: 30),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MonthlyStatRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _MonthlyStatRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 15, color: Colors.black87),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: valueColor ?? Colors.black87,
-          ),
-        ),
-      ],
     );
   }
 }

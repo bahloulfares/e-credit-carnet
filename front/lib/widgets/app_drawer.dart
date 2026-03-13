@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
+import '../providers/locale_provider.dart';
 import '../constants/app_constants.dart';
 
 class AppDrawer extends ConsumerWidget {
@@ -10,6 +12,7 @@ class AppDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
+    final l10n = context.l10n;
     final user = authState.user;
     final isAdmin = user?.role == 'SUPER_ADMIN';
 
@@ -42,7 +45,7 @@ class AppDrawer extends ConsumerWidget {
           if (isAdmin) ...[
             ListTile(
               leading: const Icon(Icons.dashboard),
-              title: const Text('Dashboard'),
+              title: Text(l10n.t('dashboard')),
               onTap: () {
                 Navigator.of(context).pop();
                 if (ModalRoute.of(context)?.settings.name != Routes.dashboard) {
@@ -52,7 +55,7 @@ class AppDrawer extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.admin_panel_settings),
-              title: const Text('Gestion Épiciers'),
+              title: Text(l10n.t('gestionEpiciers')),
               onTap: () {
                 Navigator.of(context).pop();
                 if (ModalRoute.of(context)?.settings.name !=
@@ -66,7 +69,7 @@ class AppDrawer extends ConsumerWidget {
           ] else ...[
             ListTile(
               leading: const Icon(Icons.dashboard),
-              title: const Text('Dashboard'),
+              title: Text(l10n.t('dashboard')),
               onTap: () {
                 Navigator.of(context).pop();
                 if (ModalRoute.of(context)?.settings.name != Routes.dashboard) {
@@ -78,7 +81,7 @@ class AppDrawer extends ConsumerWidget {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.people),
-            title: const Text('Clients'),
+            title: Text(l10n.t('clients')),
             onTap: () async {
               Navigator.of(context).pop();
               await Navigator.of(context).pushNamed(Routes.clients);
@@ -90,7 +93,7 @@ class AppDrawer extends ConsumerWidget {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.person),
-            title: const Text('Profil'),
+            title: Text(l10n.t('profile')),
             onTap: () {
               Navigator.of(context).pop();
               Navigator.of(context).pushNamed(Routes.profile);
@@ -98,42 +101,47 @@ class AppDrawer extends ConsumerWidget {
           ),
           ListTile(
             leading: const Icon(Icons.refresh),
-            title: const Text('Rafraîchir'),
+            title: Text(l10n.t('refresh')),
             onTap: () {
               Navigator.of(context).pop();
               ref.read(dashboardRefreshProvider.notifier).refreshStats();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Données rafraîchies'),
+                SnackBar(
+                  content: Text(l10n.t('dataRefreshed')),
                   duration: Duration(seconds: 1),
                 ),
               );
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.language),
+            title: Text('${l10n.t('language')}: ${l10n.t('switchLanguage')}'),
+            onTap: () {
+              ref.read(localeProvider.notifier).toggle();
+              Navigator.of(context).pop();
+            },
+          ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text(
-              'Déconnexion',
-              style: TextStyle(color: Colors.red),
-            ),
+            title: Text(l10n.t('logout'), style: TextStyle(color: Colors.red)),
             onTap: () async {
               final confirmed = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Déconnexion'),
-                  content: const Text('Voulez-vous vraiment vous déconnecter?'),
+                  title: Text(l10n.t('logout')),
+                  content: Text(l10n.t('logoutConfirm')),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Annuler'),
+                      child: Text(l10n.t('cancel')),
                     ),
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                       ),
-                      child: const Text('Déconnexion'),
+                      child: Text(l10n.t('logout')),
                     ),
                   ],
                 ),
