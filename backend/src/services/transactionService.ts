@@ -43,6 +43,8 @@ export class TransactionService {
         amount: new Prisma.Decimal(data.amount.toString()),
         description: data.description,
         dueDate: data.dueDate,
+        isPaid: data.type === 'PAYMENT',
+        paidAt: data.type === 'PAYMENT' ? new Date() : null,
         paymentMethod: data.paymentMethod,
       },
     });
@@ -163,9 +165,14 @@ export class TransactionService {
   async updateTransaction(
     transactionId: string,
     userId: string,
-    data: Partial<
-      Omit<Transaction, 'id' | 'userId' | 'clientId' | 'createdAt' | 'updatedAt' | 'deletedAt'>
-    >,
+    data: {
+      amount?: number | string;
+      description?: string | null;
+      dueDate?: Date | null;
+      paymentMethod?: string | null;
+      isPaid?: boolean;
+      paidAt?: Date | null;
+    },
   ): Promise<Transaction> {
     const transaction = await this.getTransactionById(transactionId, userId);
 
@@ -173,9 +180,17 @@ export class TransactionService {
       throw new ApiError(404, 'Transaction not found');
     }
 
+    const updateData: Prisma.TransactionUpdateInput = {
+      ...data,
+      amount:
+        data.amount !== undefined
+          ? new Prisma.Decimal(data.amount.toString())
+          : undefined,
+    };
+
     const updated = await prisma.transaction.update({
       where: { id: transactionId },
-      data,
+      data: updateData,
     });
 
     // Update client stats

@@ -118,9 +118,18 @@ export class TransactionController {
       }
 
       const { id } = req.params;
-      const { description, dueDate, paymentMethod } = req.body;
+      const { amount, description, dueDate, paymentMethod } = req.body;
+
+      if (amount !== undefined) {
+        const numericAmount = Number(amount);
+        if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+          res.status(400).json({ error: 'Invalid amount' });
+          return;
+        }
+      }
 
       const transaction = await transactionService.updateTransaction(id, req.user.id, {
+        amount: amount !== undefined ? Number(amount) : undefined,
         description,
         dueDate: dueDate ? new Date(dueDate) : undefined,
         paymentMethod,
