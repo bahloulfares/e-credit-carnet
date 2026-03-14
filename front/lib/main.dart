@@ -11,6 +11,7 @@ import 'screens/client_details_screen.dart';
 import 'screens/transactions_screen.dart';
 import 'screens/admin_main_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/settings_screen.dart';
 import 'screens/api_health_screen.dart';
 import 'screens/app_lock_screen.dart';
 import 'providers/auth_provider.dart';
@@ -87,6 +88,7 @@ class MyApp extends ConsumerWidget {
         Routes.addClient: (context) => const AddClientScreen(),
         Routes.adminEpiciers: (context) => const AdminMainScreen(),
         Routes.profile: (context) => const ProfileScreen(),
+        Routes.settings: (context) => const SettingsScreen(),
         Routes.apiHealth: (context) => const ApiHealthScreen(),
       },
       onGenerateRoute: (settings) {

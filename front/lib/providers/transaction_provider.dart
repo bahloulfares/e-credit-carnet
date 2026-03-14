@@ -173,6 +173,7 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
 
   Future<void> updateTransaction(
     String transactionId, {
+    double? amount,
     String? description,
     DateTime? dueDate,
     String? paymentMethod,
@@ -181,6 +182,7 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
     try {
       final updatedTransaction = await transactionService.updateTransaction(
         transactionId,
+        amount: amount,
         description: description,
         dueDate: dueDate,
         paymentMethod: paymentMethod,
@@ -201,6 +203,7 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
         'operationType': 'UPDATE',
         'data': {
           'id': updatedTransaction.id,
+          'amount': updatedTransaction.amount,
           'description': updatedTransaction.description,
           'dueDate': updatedTransaction.dueDate?.toIso8601String(),
           'isPaid': updatedTransaction.isPaid,

@@ -157,6 +157,7 @@ class TransactionService {
 
   Future<Transaction> updateTransaction(
     String transactionId, {
+    double? amount,
     String? description,
     DateTime? dueDate,
     String? paymentMethod,
@@ -170,6 +171,7 @@ class TransactionService {
               'Content-Type': 'application/json',
             },
             body: jsonEncode({
+              'amount': amount,
               'description': description,
               'dueDate': dueDate?.toIso8601String(),
               'paymentMethod': paymentMethod,

@@ -26,6 +26,14 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   int? _selectedMonth;
   int? _selectedYear;
 
+  bool? _buildServerPaidFilter() {
+    // Apply server-side paid filter only for CREDIT type to avoid excluding
+    // PAYMENT rows coming from historical data where isPaid may be false.
+    if (_selectedTypeFilter != 'CREDIT') return null;
+    if (_selectedPaidFilter == 'ALL') return null;
+    return _selectedPaidFilter == 'PAID';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -72,9 +80,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final filteredTransactions = state.transactions.where((tx) {
       final typeOk =
           _selectedTypeFilter == 'ALL' || tx.type == _selectedTypeFilter;
-      final paidOk =
-          _selectedPaidFilter == 'ALL' ||
-          tx.isPaid == (_selectedPaidFilter == 'PAID');
+      final paidOk = switch (_selectedPaidFilter) {
+        'ALL' => true,
+        'PAID' => tx.type == 'PAYMENT' || (tx.type == 'CREDIT' && tx.isPaid),
+        'UNPAID' => tx.type == 'CREDIT' && !tx.isPaid,
+        _ => true,
+      };
       final monthOk =
           _selectedMonth == null || tx.transactionDate.month == _selectedMonth;
       final yearOk =
@@ -119,9 +130,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         .read(transactionListProvider(widget.clientId).notifier)
                         .applyFilters(
                           type: value == 'ALL' ? null : value,
-                          isPaid: _selectedPaidFilter == 'ALL'
-                              ? null
-                              : _selectedPaidFilter == 'PAID',
+                          isPaid: _buildServerPaidFilter(),
                           month: _selectedMonth,
                           year: _selectedYear,
                         );
@@ -158,7 +167,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           type: _selectedTypeFilter == 'ALL'
                               ? null
                               : _selectedTypeFilter,
-                          isPaid: value == 'ALL' ? null : value == 'PAID',
+                          isPaid: _buildServerPaidFilter(),
                           month: _selectedMonth,
                           year: _selectedYear,
                         );
@@ -200,9 +209,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 type: _selectedTypeFilter == 'ALL'
                                     ? null
                                     : _selectedTypeFilter,
-                                isPaid: _selectedPaidFilter == 'ALL'
-                                    ? null
-                                    : _selectedPaidFilter == 'PAID',
+                                isPaid: _buildServerPaidFilter(),
                                 month: value,
                                 year: _selectedYear,
                               );
@@ -242,9 +249,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 type: _selectedTypeFilter == 'ALL'
                                     ? null
                                     : _selectedTypeFilter,
-                                isPaid: _selectedPaidFilter == 'ALL'
-                                    ? null
-                                    : _selectedPaidFilter == 'PAID',
+                                isPaid: _buildServerPaidFilter(),
                                 month: _selectedMonth,
                                 year: value,
                               );
@@ -499,6 +504,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final parentContext = context;
     final l10n = parentContext.l10n;
     final formKey = GlobalKey<FormState>();
+    final amountController = TextEditingController(
+      text: transaction.amount.toStringAsFixed(2),
+    );
     DateTime? dueDateValue = transaction.dueDate;
     final descriptionController = TextEditingController(
       text: transaction.description ?? '',
@@ -527,13 +535,18 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
-                      initialValue:
-                          '${transaction.amount.toStringAsFixed(2)} DT',
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        labelText: l10n.t('amount'),
-                        helperText: l10n.t('amountReadOnly'),
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
+                      decoration: InputDecoration(labelText: l10n.t('amount')),
+                      validator: (value) {
+                        final parsed = double.tryParse((value ?? '').trim());
+                        if (parsed == null || parsed <= 0) {
+                          return l10n.t('amountInvalid');
+                        }
+                        return null;
+                      },
                     ),
                     if (transaction.type == 'CREDIT') ...[
                       const SizedBox(height: 12),
@@ -638,6 +651,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 )
                                 .updateTransaction(
                                   transaction.id,
+                                  amount: double.parse(
+                                    amountController.text.trim(),
+                                  ),
                                   description:
                                       descriptionController.text.trim().isEmpty
                                       ? null

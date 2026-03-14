@@ -2,7 +2,7 @@ import 'package:ccns/l10n/app_localizations.dart';
 import 'package:ccns/models/user_model.dart';
 import 'package:ccns/providers/app_lock_provider.dart';
 import 'package:ccns/providers/auth_provider.dart';
-import 'package:ccns/screens/profile_screen.dart';
+import 'package:ccns/screens/settings_screen.dart';
 import 'package:ccns/services/api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,7 +61,7 @@ void main() {
     );
   }
 
-  Future<void> pumpProfile(
+  Future<void> pumpSettings(
     WidgetTester tester, {
     required AppLockNotifier lockNotifier,
   }) async {
@@ -81,7 +81,7 @@ void main() {
           locale: const Locale('fr'),
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: const ProfileScreen(),
+          home: const SettingsScreen(),
         ),
       ),
     );
@@ -95,7 +95,7 @@ void main() {
     final lockNotifier = AppLockNotifier(storage: storage, iterations: 1);
     await lockNotifier.ready();
 
-    await pumpProfile(tester, lockNotifier: lockNotifier);
+    await pumpSettings(tester, lockNotifier: lockNotifier);
 
     expect(find.text('Activer le verrouillage PIN'), findsOneWidget);
     expect(find.text('Changer le code PIN'), findsNothing);
@@ -111,7 +111,7 @@ void main() {
     await lockNotifier.ready();
     await lockNotifier.setupPin('1234');
 
-    await pumpProfile(tester, lockNotifier: lockNotifier);
+    await pumpSettings(tester, lockNotifier: lockNotifier);
 
     expect(find.text('Verrouiller maintenant'), findsOneWidget);
 

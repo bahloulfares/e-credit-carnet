@@ -102,6 +102,14 @@ class AppDrawer extends ConsumerWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.settings),
+            title: Text(l10n.t('settings')),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed(Routes.settings);
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.health_and_safety),
             title: Text(l10n.t('apiHealth')),
             onTap: () {

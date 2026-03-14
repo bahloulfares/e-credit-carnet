@@ -208,6 +208,7 @@ class AppLocalizations {
     // Drawer
     'gestionEpiciers': 'Gestion Épiciers',
     'profile': 'Profil',
+    'settings': 'Parametre',
     'refresh': 'Rafraîchir',
     'dataRefreshed': 'Données rafraîchies',
     'logout': 'Déconnexion',
@@ -396,6 +397,7 @@ class AppLocalizations {
     // Drawer
     'gestionEpiciers': 'إدارة البقالين',
     'profile': 'الملف الشخصي',
+    'settings': 'الإعدادات',
     'refresh': 'تحديث',
     'dataRefreshed': 'تم تحديث البيانات',
     'logout': 'تسجيل الخروج',
