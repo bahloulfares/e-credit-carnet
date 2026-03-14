@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
+import '../providers/app_lock_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/locale_provider.dart';
 import '../constants/app_constants.dart';
@@ -15,6 +16,7 @@ class AppDrawer extends ConsumerWidget {
     final l10n = context.l10n;
     final user = authState.user;
     final isAdmin = user?.role == 'SUPER_ADMIN';
+    final lockState = ref.watch(appLockProvider);
 
     return Drawer(
       child: ListView(
@@ -100,6 +102,14 @@ class AppDrawer extends ConsumerWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.health_and_safety),
+            title: Text(l10n.t('apiHealth')),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed(Routes.apiHealth);
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.refresh),
             title: Text(l10n.t('refresh')),
             onTap: () {
@@ -113,6 +123,18 @@ class AppDrawer extends ConsumerWidget {
               );
             },
           ),
+          if (lockState.hasPinSet)
+            ListTile(
+              leading: const Icon(Icons.lock),
+              title: Text(l10n.t('lockNow')),
+              onTap: () {
+                Navigator.of(context).pop();
+                ref.read(appLockProvider.notifier).lock();
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(l10n.t('lockNowDone'))));
+              },
+            ),
           ListTile(
             leading: const Icon(Icons.language),
             title: Text('${l10n.t('language')}: ${l10n.t('switchLanguage')}'),

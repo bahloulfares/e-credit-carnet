@@ -2,12 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/client_service.dart';
 import '../models/client_model.dart';
 import 'auth_provider.dart';
+import 'sync_queue_provider.dart';
 
 // Client list state notifier
 final clientListProvider =
     StateNotifierProvider<ClientListNotifier, ClientListState>((ref) {
       final clientService = ref.watch(clientServiceProvider);
-      return ClientListNotifier(clientService);
+      return ClientListNotifier(clientService, ref);
     });
 
 // Search clients provider
@@ -66,8 +67,9 @@ class ClientListState {
 
 class ClientListNotifier extends StateNotifier<ClientListState> {
   final ClientService clientService;
+  final Ref ref;
 
-  ClientListNotifier(this.clientService) : super(ClientListState()) {
+  ClientListNotifier(this.clientService, this.ref) : super(ClientListState()) {
     loadClients();
   }
 
@@ -124,6 +126,21 @@ class ClientListNotifier extends StateNotifier<ClientListState> {
         clients: [newClient, ...state.clients],
         isLoading: false,
       );
+
+      ref.read(syncQueueProvider.notifier).enqueue({
+        'entityType': 'client',
+        'entityId': newClient.id,
+        'operationType': 'CREATE',
+        'data': {
+          'id': newClient.id,
+          'firstName': newClient.firstName,
+          'lastName': newClient.lastName,
+          'phone': newClient.phone,
+          'email': newClient.email,
+          'address': newClient.address,
+        },
+      });
+
       // Auto-refresh pour corriger pagination et stats
       await loadClients(refresh: true);
     } catch (e) {
@@ -156,6 +173,21 @@ class ClientListNotifier extends StateNotifier<ClientListState> {
       }).toList();
 
       state = state.copyWith(clients: updatedClients, isLoading: false);
+
+      ref.read(syncQueueProvider.notifier).enqueue({
+        'entityType': 'client',
+        'entityId': updatedClient.id,
+        'operationType': 'UPDATE',
+        'data': {
+          'id': updatedClient.id,
+          'firstName': updatedClient.firstName,
+          'lastName': updatedClient.lastName,
+          'phone': updatedClient.phone,
+          'email': updatedClient.email,
+          'address': updatedClient.address,
+        },
+      });
+
       // Auto-refresh pour corriger pagination et stats
       await loadClients(refresh: true);
     } catch (e) {
@@ -172,6 +204,14 @@ class ClientListNotifier extends StateNotifier<ClientListState> {
         clients: state.clients.where((c) => c.id != clientId).toList(),
         isLoading: false,
       );
+
+      ref.read(syncQueueProvider.notifier).enqueue({
+        'entityType': 'client',
+        'entityId': clientId,
+        'operationType': 'DELETE',
+        'data': {'id': clientId},
+      });
+
       // Auto-refresh pour synchroniser la pagination
       await loadClients(refresh: true);
     } catch (e) {

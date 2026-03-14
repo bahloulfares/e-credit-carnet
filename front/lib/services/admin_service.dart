@@ -80,6 +80,27 @@ class AdminService {
     }
   }
 
+  Future<AdminEpicier> getEpicierById(String id) async {
+    try {
+      final response = await httpClient
+          .get(Uri.parse('$endpoint/epiciers/$id'), headers: _headers())
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          message:
+              jsonDecode(response.body)['error'] ?? 'Failed to load epicier',
+          statusCode: response.statusCode,
+        );
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return AdminEpicier.fromJson(data['epicier'] as Map<String, dynamic>);
+    } catch (e) {
+      throw _mapException(e);
+    }
+  }
+
   Future<AdminGlobalStats> getGlobalStats() async {
     try {
       final response = await httpClient

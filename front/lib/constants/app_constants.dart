@@ -42,6 +42,7 @@ class Routes {
   static const String addTransaction = '/add-transaction';
   static const String settings = '/settings';
   static const String profile = '/profile';
+  static const String apiHealth = '/api-health';
 }
 
 /// MESSAGES D'ERREUR GÉNÉRIQUES

@@ -22,6 +22,7 @@ class TransactionsScreen extends ConsumerStatefulWidget {
 class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   late final ScrollController _scrollController;
   String _selectedTypeFilter = 'ALL';
+  String _selectedPaidFilter = 'ALL';
   int? _selectedMonth;
   int? _selectedYear;
 
@@ -50,6 +51,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     super.dispose();
   }
 
+  String _formatDate(DateTime date) {
+    final dd = date.day.toString().padLeft(2, '0');
+    final mm = date.month.toString().padLeft(2, '0');
+    final yyyy = date.year.toString();
+    return '$dd/$mm/$yyyy';
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(transactionListProvider(widget.clientId));
@@ -64,11 +72,14 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final filteredTransactions = state.transactions.where((tx) {
       final typeOk =
           _selectedTypeFilter == 'ALL' || tx.type == _selectedTypeFilter;
+      final paidOk =
+          _selectedPaidFilter == 'ALL' ||
+          tx.isPaid == (_selectedPaidFilter == 'PAID');
       final monthOk =
           _selectedMonth == null || tx.transactionDate.month == _selectedMonth;
       final yearOk =
           _selectedYear == null || tx.transactionDate.year == _selectedYear;
-      return typeOk && monthOk && yearOk;
+      return typeOk && paidOk && monthOk && yearOk;
     }).toList();
 
     return Scaffold(
@@ -108,6 +119,46 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         .read(transactionListProvider(widget.clientId).notifier)
                         .applyFilters(
                           type: value == 'ALL' ? null : value,
+                          isPaid: _selectedPaidFilter == 'ALL'
+                              ? null
+                              : _selectedPaidFilter == 'PAID',
+                          month: _selectedMonth,
+                          year: _selectedYear,
+                        );
+                  },
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedPaidFilter,
+                  decoration: InputDecoration(
+                    labelText: l10n.t('paymentStatus'),
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'ALL',
+                      child: Text(l10n.t('allPaymentStatus')),
+                    ),
+                    DropdownMenuItem(
+                      value: 'PAID',
+                      child: Text(l10n.t('paidStatus')),
+                    ),
+                    DropdownMenuItem(
+                      value: 'UNPAID',
+                      child: Text(l10n.t('unpaidStatus')),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() {
+                      _selectedPaidFilter = value;
+                    });
+                    ref
+                        .read(transactionListProvider(widget.clientId).notifier)
+                        .applyFilters(
+                          type: _selectedTypeFilter == 'ALL'
+                              ? null
+                              : _selectedTypeFilter,
+                          isPaid: value == 'ALL' ? null : value == 'PAID',
                           month: _selectedMonth,
                           year: _selectedYear,
                         );
@@ -149,6 +200,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 type: _selectedTypeFilter == 'ALL'
                                     ? null
                                     : _selectedTypeFilter,
+                                isPaid: _selectedPaidFilter == 'ALL'
+                                    ? null
+                                    : _selectedPaidFilter == 'PAID',
                                 month: value,
                                 year: _selectedYear,
                               );
@@ -188,6 +242,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 type: _selectedTypeFilter == 'ALL'
                                     ? null
                                     : _selectedTypeFilter,
+                                isPaid: _selectedPaidFilter == 'ALL'
+                                    ? null
+                                    : _selectedPaidFilter == 'PAID',
                                 month: _selectedMonth,
                                 year: value,
                               );
@@ -201,6 +258,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           _selectedMonth = null;
                           _selectedYear = null;
                           _selectedTypeFilter = 'ALL';
+                          _selectedPaidFilter = 'ALL';
                         });
                         ref
                             .read(
@@ -268,6 +326,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   }
 
   Future<void> _showAddTransactionDialog() async {
+    final parentContext = context;
     final l10n = context.l10n;
     final formKey = GlobalKey<FormState>();
     String type = 'CREDIT';
@@ -285,67 +344,71 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               title: Text(l10n.t('newTransaction')),
               content: Form(
                 key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButtonFormField<String>(
-                      initialValue: type,
-                      decoration: InputDecoration(labelText: l10n.t('type')),
-                      items: [
-                        DropdownMenuItem(
-                          value: 'CREDIT',
-                          child: Text(l10n.t('credit')),
-                        ),
-                        DropdownMenuItem(
-                          value: 'PAYMENT',
-                          child: Text(l10n.t('payment')),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() {
-                            type = value;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: type,
+                        decoration: InputDecoration(labelText: l10n.t('type')),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'CREDIT',
+                            child: Text(l10n.t('credit')),
+                          ),
+                          DropdownMenuItem(
+                            value: 'PAYMENT',
+                            child: Text(l10n.t('payment')),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() {
+                              type = value;
+                            });
+                          }
+                        },
                       ),
-                      decoration: InputDecoration(labelText: l10n.t('amount')),
-                      onChanged: (value) => amountValue = value,
-                      validator: (value) {
-                        final parsed = double.tryParse(value ?? '');
-                        if (parsed == null || parsed <= 0) {
-                          return l10n.t('amountInvalid');
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      decoration: InputDecoration(
-                        labelText: l10n.t('description'),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: l10n.t('amount'),
+                        ),
+                        onChanged: (value) => amountValue = value,
+                        validator: (value) {
+                          final parsed = double.tryParse(value ?? '');
+                          if (parsed == null || parsed <= 0) {
+                            return l10n.t('amountInvalid');
+                          }
+                          return null;
+                        },
                       ),
-                      onChanged: (value) => descriptionValue = value,
-                    ),
-                    if (type == 'PAYMENT')
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '${l10n.t('paymentMethod')}: ${l10n.t('cash')}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: l10n.t('description'),
+                        ),
+                        onChanged: (value) => descriptionValue = value,
+                      ),
+                      if (type == 'PAYMENT')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${l10n.t('paymentMethod')}: ${l10n.t('cash')}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -394,7 +457,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               Navigator.of(dialogContext).pop();
                             }
 
-                            ScaffoldMessenger.of(this.context).showSnackBar(
+                            ScaffoldMessenger.of(parentContext).showSnackBar(
                               SnackBar(
                                 content: Text(l10n.t('transactionAdded')),
                               ),
@@ -404,7 +467,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               isSubmitting = false;
                             });
                             if (!mounted) return;
-                            ScaffoldMessenger.of(this.context).showSnackBar(
+                            ScaffoldMessenger.of(parentContext).showSnackBar(
                               SnackBar(
                                 content: Text(
                                   '${l10n.t('transactionError')}: $e',
@@ -436,6 +499,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final parentContext = context;
     final l10n = parentContext.l10n;
     final formKey = GlobalKey<FormState>();
+    DateTime? dueDateValue = transaction.dueDate;
     final descriptionController = TextEditingController(
       text: transaction.description ?? '',
     );
@@ -451,10 +515,96 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               title: Text(l10n.t('editTransaction')),
               content: Form(
                 key: formKey,
-                child: TextFormField(
-                  controller: descriptionController,
-                  decoration: InputDecoration(labelText: l10n.t('description')),
-                  maxLines: 3,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      initialValue: transaction.type == 'CREDIT'
+                          ? l10n.t('credit')
+                          : l10n.t('payment'),
+                      readOnly: true,
+                      decoration: InputDecoration(labelText: l10n.t('type')),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      initialValue:
+                          '${transaction.amount.toStringAsFixed(2)} DT',
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        labelText: l10n.t('amount'),
+                        helperText: l10n.t('amountReadOnly'),
+                      ),
+                    ),
+                    if (transaction.type == 'CREDIT') ...[
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: isSubmitting
+                            ? null
+                            : () async {
+                                final pickedDate = await showDatePicker(
+                                  context: dialogContext,
+                                  initialDate: dueDateValue ?? DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2100),
+                                );
+
+                                if (pickedDate == null) return;
+                                setDialogState(() {
+                                  dueDateValue = DateTime(
+                                    pickedDate.year,
+                                    pickedDate.month,
+                                    pickedDate.day,
+                                  );
+                                });
+                              },
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            labelText: l10n.t('dueDate'),
+                            suffixIcon: dueDateValue == null
+                                ? const Icon(Icons.calendar_today)
+                                : IconButton(
+                                    tooltip: l10n.t('clearDate'),
+                                    onPressed: isSubmitting
+                                        ? null
+                                        : () {
+                                            setDialogState(() {
+                                              dueDateValue = null;
+                                            });
+                                          },
+                                    icon: const Icon(Icons.clear),
+                                  ),
+                          ),
+                          child: Text(
+                            dueDateValue == null
+                                ? l10n.t('noDueDate')
+                                : _formatDate(dueDateValue!),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: descriptionController,
+                      decoration: InputDecoration(
+                        labelText: l10n.t('description'),
+                      ),
+                      maxLines: 3,
+                    ),
+                    if (transaction.type == 'PAYMENT')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${l10n.t('paymentMethod')}: ${l10n.t('cash')}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               actions: [
@@ -492,6 +642,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       descriptionController.text.trim().isEmpty
                                       ? null
                                       : descriptionController.text.trim(),
+                                  dueDate: transaction.type == 'CREDIT'
+                                      ? dueDateValue
+                                      : null,
                                   paymentMethod: transaction.type == 'PAYMENT'
                                       ? 'cash'
                                       : null,

@@ -18,8 +18,27 @@ class ApiClient {
     : _httpClient = httpClient ?? http.Client(),
       _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
+  static const _cachedUserKey = 'cached_user_profile';
+
   Future<void> initialize() async {
     _token = await _secureStorage.read(key: 'jwt_token');
+  }
+
+  Future<void> _saveUserCache(User user) async {
+    await _secureStorage.write(
+      key: _cachedUserKey,
+      value: jsonEncode(user.toJson()),
+    );
+  }
+
+  Future<User?> loadUserCache() async {
+    final raw = await _secureStorage.read(key: _cachedUserKey);
+    if (raw == null) return null;
+    try {
+      return User.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
   }
 
   ApiException _mapException(Object error) {
@@ -101,6 +120,8 @@ class ApiClient {
         final data = jsonDecode(response.body);
         _token = data['token'];
         await _secureStorage.write(key: 'jwt_token', value: _token);
+        final user = User.fromJson(data['user']);
+        await _saveUserCache(user);
         return data;
       } else {
         throw ApiException(
@@ -121,7 +142,9 @@ class ApiClient {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return User.fromJson(data['user']);
+        final user = User.fromJson(data['user']);
+        await _saveUserCache(user);
+        return user;
       } else {
         throw ApiException(
           message:
@@ -178,13 +201,12 @@ class ApiClient {
       await _httpClient
           .post(Uri.parse('$baseUrl/auth/logout'), headers: _getHeaders())
           .timeout(timeout);
-
+    } catch (_) {
+      // Even if logout fails, clear local data
+    } finally {
       _token = null;
       await _secureStorage.delete(key: 'jwt_token');
-    } catch (e) {
-      // Even if logout fails, clear local token
-      _token = null;
-      await _secureStorage.delete(key: 'jwt_token');
+      await _secureStorage.delete(key: _cachedUserKey);
     }
   }
 

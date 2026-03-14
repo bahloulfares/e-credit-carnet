@@ -11,7 +11,10 @@ import 'screens/client_details_screen.dart';
 import 'screens/transactions_screen.dart';
 import 'screens/admin_main_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/api_health_screen.dart';
+import 'screens/app_lock_screen.dart';
 import 'providers/auth_provider.dart';
+import 'providers/app_lock_provider.dart';
 import 'providers/theme_provider.dart';
 import 'constants/app_constants.dart';
 
@@ -75,15 +78,16 @@ class MyApp extends ConsumerWidget {
           ),
         ),
       ),
-      home: const AuthGateScreen(),
+      home: AuthGateScreen(),
       routes: {
         Routes.login: (context) => const LoginScreen(),
         Routes.register: (context) => const RegisterScreen(),
-        Routes.dashboard: (context) => const AuthGateScreen(),
+        Routes.dashboard: (context) => AuthGateScreen(),
         Routes.clients: (context) => const ClientsScreen(),
         Routes.addClient: (context) => const AddClientScreen(),
         Routes.adminEpiciers: (context) => const AdminMainScreen(),
         Routes.profile: (context) => const ProfileScreen(),
+        Routes.apiHealth: (context) => const ApiHealthScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == Routes.clientDetails) {
@@ -127,14 +131,58 @@ class MyApp extends ConsumerWidget {
   }
 }
 
-class AuthGateScreen extends ConsumerWidget {
-  const AuthGateScreen({super.key});
+class AuthGateScreen extends ConsumerStatefulWidget {
+  final Duration lockTimeout;
+  final DateTime Function() now;
+
+  static DateTime _defaultNow() => DateTime.now();
+
+  const AuthGateScreen({
+    super.key,
+    this.lockTimeout = const Duration(minutes: 5),
+    this.now = _defaultNow,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authStateProvider);
+  ConsumerState<AuthGateScreen> createState() => _AuthGateScreenState();
+}
 
-    // Show loading during initialization
+class _AuthGateScreenState extends ConsumerState<AuthGateScreen>
+    with WidgetsBindingObserver {
+  // Heure à laquelle l'app est passée en arrière-plan
+  DateTime? _pausedAt;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
+    if (lifecycleState == AppLifecycleState.paused) {
+      _pausedAt = widget.now();
+    } else if (lifecycleState == AppLifecycleState.resumed) {
+      if (_pausedAt != null &&
+          widget.now().difference(_pausedAt!) >= widget.lockTimeout) {
+        ref.read(appLockProvider.notifier).lock();
+      }
+      _pausedAt = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+    final lockState = ref.watch(appLockProvider);
+
+    // Initialisation en cours
     if (authState.isLoading && authState.user == null) {
       return Scaffold(
         body: Center(
@@ -152,6 +200,11 @@ class AuthGateScreen extends ConsumerWidget {
 
     if (!authState.isAuthenticated) {
       return const LoginScreen();
+    }
+
+    // Écran de verrouillage PIN (si activé et verrouillé)
+    if (lockState.isLocked) {
+      return const AppLockScreen();
     }
 
     if (authState.user?.role == 'SUPER_ADMIN') {

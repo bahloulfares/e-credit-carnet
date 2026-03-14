@@ -19,6 +19,13 @@ final adminGlobalStatsProvider = FutureProvider<AdminGlobalStats>((ref) async {
   return adminService.getGlobalStats();
 });
 
+final adminEpicierDetailsProvider = FutureProvider.family<AdminEpicier, String>(
+  (ref, epicierId) async {
+    final adminService = ref.watch(adminServiceProvider);
+    return adminService.getEpicierById(epicierId);
+  },
+);
+
 class AdminEpiciersState {
   final List<AdminEpicier> epiciers;
   final bool isLoading;

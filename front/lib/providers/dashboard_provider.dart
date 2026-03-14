@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/dashboard_service.dart';
 import '../models/dashboard_model.dart';
 import 'auth_provider.dart';
+import 'sync_queue_provider.dart';
 
 // Dashboard stats provider with caching (30 seconds)
 final dashboardStatsProvider = FutureProvider.autoDispose<DashboardStats>((
@@ -62,7 +63,20 @@ class DashboardRefreshNotifier extends StateNotifier<bool> {
   ) async {
     state = true;
     try {
-      final result = await dashboardService.sync(changes);
+      final pendingChanges = changes.isNotEmpty
+          ? changes
+          : await ref.read(syncQueueProvider.notifier).snapshot();
+
+      if (pendingChanges.isEmpty) {
+        return {
+          'message': 'No local changes to sync',
+          'itemsSynced': 0,
+          'itemsFailed': 0,
+        };
+      }
+
+      final result = await dashboardService.sync(pendingChanges);
+      ref.read(syncQueueProvider.notifier).clear();
       // Refresh stats after sync
       await refreshStats();
       return result;

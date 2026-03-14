@@ -71,12 +71,14 @@ class AuthState {
   final bool isLoading;
   final String? error;
   final bool isAuthenticated;
+  final bool isOffline;
 
   AuthState({
     this.user,
     this.isLoading = false,
     this.error,
     this.isAuthenticated = false,
+    this.isOffline = false,
   });
 
   AuthState copyWith({
@@ -84,12 +86,14 @@ class AuthState {
     bool? isLoading,
     String? error,
     bool? isAuthenticated,
+    bool? isOffline,
   }) {
     return AuthState(
       user: user ?? this.user,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+      isOffline: isOffline ?? this.isOffline,
     );
   }
 }
@@ -107,11 +111,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (apiClient.isAuthenticated) {
       try {
         final user = await apiClient.getProfile();
-        state = state.copyWith(user: user, isAuthenticated: true);
+        state = state.copyWith(
+          user: user,
+          isAuthenticated: true,
+          isOffline: false,
+        );
       } catch (e) {
+        final isNetworkError =
+            e is ApiException && (e.statusCode == 0 || e.statusCode == 408);
+        if (isNetworkError) {
+          // Pas de réseau — utiliser le profil mis en cache
+          final cachedUser = await apiClient.loadUserCache();
+          if (cachedUser != null) {
+            state = state.copyWith(
+              user: cachedUser,
+              isAuthenticated: true,
+              isOffline: true,
+            );
+            return;
+          }
+        }
+        // Erreur auth (401/403) ou pas de cache → déconnexion
         await apiClient.logout();
         final errorText = e.toString().toLowerCase().contains('deactivated')
             ? 'Votre compte est désactivé. Contactez l’administrateur.'
+            : isNetworkError
+            ? 'Hors ligne. Reconnectez-vous pour accéder à l’application.'
             : 'Session invalide. Veuillez vous reconnecter.';
         state = state.copyWith(error: errorText, isAuthenticated: false);
       }

@@ -1,0 +1,39 @@
+# =============================================================================
+# Render Blueprint - ProCreditApp Backend
+# https://render.com/docs/blueprint-spec
+# =============================================================================
+# HOW TO DEPLOY:
+# 1. Push this repo to GitHub
+# 2. Go to https://dashboard.render.com/
+# 3. Click "New" → "Blueprint"
+# 4. Connect your GitHub repo
+# 5. Render will read this file automatically
+# 6. Set DATABASE_URL manually in the Render dashboard (Environment tab)
+# =============================================================================
+
+services:
+  - type: web
+    name: procreditapp-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free          # Change to "starter" or "standard" for production
+    region: frankfurt   # eu-west closest to Tunisia (or use oregon for US)
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false       # ← Set this manually in Render dashboard (Supabase URL)
+      - key: JWT_SECRET
+        generateValue: true   # Render auto-generates a secure random value
+      - key: JWT_EXPIRATION
+        value: 7d
+      - key: CORS_ORIGIN
+        value: "*"        # Replace with your Flutter app domain if needed
+      - key: LOG_LEVEL
+        value: info
+      - key: BCRYPT_ROUNDS
+        value: 10

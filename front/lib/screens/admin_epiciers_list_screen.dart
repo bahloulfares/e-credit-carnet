@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/admin_epicier_model.dart';
 import '../providers/admin_provider.dart';
 import '../services/api_client.dart';
+import 'admin_epicier_details_screen.dart';
 
 class AdminEpiciersListScreen extends ConsumerStatefulWidget {
   const AdminEpiciersListScreen({super.key});
@@ -112,6 +113,7 @@ class _AdminEpiciersListScreenState
                   final epicier = state.epiciers[index];
                   return _EpicierTile(
                     epicier: epicier,
+                    onViewDetails: () => _openEpicierDetails(epicier),
                     onViewClients: () => _showEpicierClients(epicier),
                     onEdit: () => _showEditEpicierDialog(epicier),
                     onToggleStatus: () => _toggleStatus(epicier),
@@ -615,10 +617,19 @@ class _AdminEpiciersListScreenState
       },
     );
   }
+
+  Future<void> _openEpicierDetails(AdminEpicier epicier) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AdminEpicierDetailsScreen(epicierId: epicier.id),
+      ),
+    );
+  }
 }
 
 class _EpicierTile extends StatelessWidget {
   final AdminEpicier epicier;
+  final VoidCallback onViewDetails;
   final VoidCallback onViewClients;
   final VoidCallback onEdit;
   final VoidCallback onToggleStatus;
@@ -626,6 +637,7 @@ class _EpicierTile extends StatelessWidget {
 
   const _EpicierTile({
     required this.epicier,
+    required this.onViewDetails,
     required this.onViewClients,
     required this.onEdit,
     required this.onToggleStatus,
@@ -674,6 +686,11 @@ class _EpicierTile extends StatelessWidget {
                 alignment: WrapAlignment.end,
                 spacing: 2,
                 children: [
+                  IconButton(
+                    tooltip: 'Voir details',
+                    onPressed: onViewDetails,
+                    icon: const Icon(Icons.visibility, size: 20),
+                  ),
                   IconButton(
                     tooltip: 'Voir les clients',
                     onPressed: onViewClients,

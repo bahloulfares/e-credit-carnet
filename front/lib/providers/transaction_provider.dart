@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
 import '../models/transaction_model.dart';
 import 'auth_provider.dart';
+import 'sync_queue_provider.dart';
 
 // Transaction list state notifier
 final transactionListProvider =
@@ -11,7 +12,7 @@ final transactionListProvider =
       String?
     >((ref, clientId) {
       final transactionService = ref.watch(transactionServiceProvider);
-      return TransactionListNotifier(transactionService, clientId);
+      return TransactionListNotifier(transactionService, clientId, ref);
     });
 
 // Single transaction provider
@@ -59,17 +60,25 @@ class TransactionListState {
 class TransactionListNotifier extends StateNotifier<TransactionListState> {
   final TransactionService transactionService;
   final String? clientId;
+  final Ref ref;
   String? _typeFilter;
+  bool? _isPaidFilter;
   int? _monthFilter;
   int? _yearFilter;
 
-  TransactionListNotifier(this.transactionService, this.clientId)
+  TransactionListNotifier(this.transactionService, this.clientId, this.ref)
     : super(TransactionListState()) {
     loadTransactions();
   }
 
-  Future<void> applyFilters({String? type, int? month, int? year}) async {
+  Future<void> applyFilters({
+    String? type,
+    bool? isPaid,
+    int? month,
+    int? year,
+  }) async {
     _typeFilter = type;
+    _isPaidFilter = isPaid;
     _monthFilter = month;
     _yearFilter = year;
     await loadTransactions(refresh: true);
@@ -91,6 +100,7 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
         skip: page * 20,
         take: 20,
         type: _typeFilter,
+        isPaid: _isPaidFilter,
         month: _monthFilter,
         year: _yearFilter,
       );
@@ -137,6 +147,24 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
         transactions: [newTransaction, ...state.transactions],
         isLoading: false,
       );
+
+      ref.read(syncQueueProvider.notifier).enqueue({
+        'entityType': 'transaction',
+        'entityId': newTransaction.id,
+        'operationType': 'CREATE',
+        'data': {
+          'id': newTransaction.id,
+          'clientId': newTransaction.clientId,
+          'type': newTransaction.type,
+          'amount': newTransaction.amount,
+          'description': newTransaction.description,
+          'transactionDate': newTransaction.transactionDate.toIso8601String(),
+          'dueDate': newTransaction.dueDate?.toIso8601String(),
+          'isPaid': newTransaction.isPaid,
+          'paidAt': newTransaction.paidAt?.toIso8601String(),
+          'paymentMethod': newTransaction.paymentMethod,
+        },
+      });
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;
@@ -166,6 +194,20 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
         transactions: updatedTransactions,
         isLoading: false,
       );
+
+      ref.read(syncQueueProvider.notifier).enqueue({
+        'entityType': 'transaction',
+        'entityId': updatedTransaction.id,
+        'operationType': 'UPDATE',
+        'data': {
+          'id': updatedTransaction.id,
+          'description': updatedTransaction.description,
+          'dueDate': updatedTransaction.dueDate?.toIso8601String(),
+          'isPaid': updatedTransaction.isPaid,
+          'paidAt': updatedTransaction.paidAt?.toIso8601String(),
+          'paymentMethod': updatedTransaction.paymentMethod,
+        },
+      });
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;
@@ -182,6 +224,13 @@ class TransactionListNotifier extends StateNotifier<TransactionListState> {
             .toList(),
         isLoading: false,
       );
+
+      ref.read(syncQueueProvider.notifier).enqueue({
+        'entityType': 'transaction',
+        'entityId': transactionId,
+        'operationType': 'DELETE',
+        'data': {'id': transactionId},
+      });
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;
