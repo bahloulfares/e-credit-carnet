@@ -108,6 +108,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
   }
 
   Future<void> _logout() async {
+    ref.read(appLockProvider.notifier).clearSessionLock();
     await ref.read(authStateProvider.notifier).logout();
   }
 

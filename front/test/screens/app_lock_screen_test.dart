@@ -233,8 +233,51 @@ void main() {
     await enterWrongPinCycle(tester);
     await tester.pump();
 
-    expect(notifier.state.requiresLogout, isTrue);
+    expect(notifier.state.requiresLogout, isFalse);
+    expect(notifier.state.isLocked, isFalse);
     expect(authNotifier.logoutCalls, 1);
     expect(authNotifier.state.isAuthenticated, isFalse);
+  });
+
+  testWidgets('Forgot PIN logs out and clears session lock', (tester) async {
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    final storage = InMemoryAppLockStorage();
+    final notifier = AppLockNotifier(storage: storage, iterations: 1);
+    final authNotifier = FakeAuthNotifier();
+    await notifier.ready();
+    await notifier.setupPin('1234');
+    notifier.lock();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appLockProvider.overrideWith((ref) => notifier),
+          authStateProvider.overrideWith((ref) => authNotifier),
+        ],
+        child: MaterialApp(
+          locale: const Locale('fr'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: const AppLockScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(notifier.state.isLocked, isTrue);
+
+    final forgotPinFinder = find.text('Code PIN oublie ? Se deconnecter');
+    await tester.ensureVisible(forgotPinFinder);
+    await tester.tap(forgotPinFinder);
+    await tester.pumpAndSettle();
+
+    expect(authNotifier.logoutCalls, 1);
+    expect(authNotifier.state.isAuthenticated, isFalse);
+    expect(notifier.state.isLocked, isFalse);
+    expect(notifier.state.requiresLogout, isFalse);
   });
 }

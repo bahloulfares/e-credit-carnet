@@ -315,6 +315,19 @@ class AppLockNotifier extends StateNotifier<AppLockState> {
       );
     }
   }
+
+  /// Réinitialise uniquement le verrouillage de session.
+  /// Le PIN reste configuré, mais l'utilisateur n'est plus bloqué sur l'écran PIN
+  /// après une réauthentification email/mot de passe.
+  void clearSessionLock() {
+    state = state.copyWith(
+      isLocked: false,
+      failedAttempts: 0,
+      lockoutLevel: 0,
+      requiresLogout: false,
+      clearLockedUntil: true,
+    );
+  }
 }
 
 final appLockProvider = StateNotifierProvider<AppLockNotifier, AppLockState>(

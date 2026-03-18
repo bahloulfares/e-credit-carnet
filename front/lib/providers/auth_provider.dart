@@ -85,13 +85,14 @@ class AuthState {
     User? user,
     bool? isLoading,
     String? error,
+    bool clearError = false,
     bool? isAuthenticated,
     bool? isOffline,
   }) {
     return AuthState(
       user: user ?? this.user,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isOffline: isOffline ?? this.isOffline,
     );
@@ -151,7 +152,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String? shopName,
     String? phone,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final response = await apiClient.register(
         email: email,
@@ -166,6 +167,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         user: user,
         isAuthenticated: true,
         isLoading: false,
+        isOffline: false,
+        clearError: true,
       );
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
@@ -174,7 +177,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> login({required String email, required String password}) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final response = await apiClient.login(email: email, password: password);
       final user = User.fromJson(response['user']);
@@ -182,6 +185,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         user: user,
         isAuthenticated: true,
         isLoading: false,
+        isOffline: false,
+        clearError: true,
       );
     } catch (e) {
       final errorText =
@@ -203,7 +208,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String? shopPhone,
     String? phone,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final user = await apiClient.updateProfile(
         firstName: firstName,
@@ -213,7 +218,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         shopPhone: shopPhone,
         phone: phone,
       );
-      state = state.copyWith(user: user, isLoading: false);
+      state = state.copyWith(
+        user: user,
+        isLoading: false,
+        isOffline: false,
+        clearError: true,
+      );
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
       rethrow;

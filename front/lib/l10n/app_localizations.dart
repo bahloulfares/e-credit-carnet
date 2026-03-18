@@ -88,6 +88,8 @@ class AppLocalizations {
     'lockStatusActive': 'Verrouillage actif',
     'lockStatusInactive': 'Verrouillage inactif',
     'syncFailed': 'Echec synchronisation',
+    'autoRetry': 'Auto-retry dans',
+    'syncing': 'Synchronisation en cours...',
     'pendingSyncs': 'Elements en attente',
     'localPendingSyncs': 'Elements locaux en attente',
     'lastSync': 'Derniere synchronisation',
@@ -216,6 +218,8 @@ class AppLocalizations {
     'switchLanguage': 'العربية',
     'language': 'Langue',
     'cashOnlyForNow': 'Paiement en espèces uniquement pour le moment',
+    'darkThemeTitle': 'Theme sombre',
+    'darkThemeSubtitle': 'Activer le mode sombre',
 
     // Profile
     'myProfile': 'Mon profil',
@@ -280,6 +284,8 @@ class AppLocalizations {
     'lockStatusActive': 'القفل مفعل',
     'lockStatusInactive': 'القفل غير مفعل',
     'syncFailed': 'فشلت المزامنة',
+    'autoRetry': 'إعادة محاولة تلقائية في',
+    'syncing': 'جاري المزامنة...',
     'pendingSyncs': 'العناصر المعلقة',
     'localPendingSyncs': 'العناصر المحلية المعلقة',
     'lastSync': 'اخر مزامنة',
@@ -405,6 +411,8 @@ class AppLocalizations {
     'switchLanguage': 'Français',
     'language': 'اللغة',
     'cashOnlyForNow': 'الدفع نقداً فقط في الوقت الحالي',
+    'darkThemeTitle': 'الوضع الداكن',
+    'darkThemeSubtitle': 'تفعيل الوضع الداكن',
 
     // Profile
     'myProfile': 'ملفي الشخصي',

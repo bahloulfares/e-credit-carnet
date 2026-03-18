@@ -22,8 +22,8 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.dark_mode),
-              title: const Text('Theme sombre'),
-              subtitle: const Text('Activer le mode sombre'),
+              title: Text(l10n.t('darkThemeTitle')),
+              subtitle: Text(l10n.t('darkThemeSubtitle')),
               trailing: Switch(
                 value: currentTheme == ThemeMode.dark,
                 onChanged: (value) {

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
-import '../models/dashboard_model.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/sync_queue_provider.dart';
 import '../providers/auth_provider.dart';
@@ -18,7 +17,17 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Timer? _autoRefreshTimer;
-  bool _didAutoSync = false;
+
+  Future<void> _runBackgroundSync() async {
+    if (!mounted) return;
+    try {
+      final queue = await ref.read(syncQueueProvider.notifier).snapshot();
+      if (queue.isEmpty) return;
+      await ref.read(dashboardRefreshProvider.notifier).performSync(const []);
+    } catch (_) {
+      // Silent failure: UX shows only a discreet retry option.
+    }
+  }
 
   @override
   void initState() {
@@ -27,40 +36,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) {
         ref.invalidate(dashboardStatsProvider);
-        ref.invalidate(syncStatusProvider);
+        _runBackgroundSync();
       }
     });
 
-    // Auto-sync au démarrage si la queue persistée est non vide
+    // Auto-sync silencieux au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || _didAutoSync) return;
-      _didAutoSync = true;
-
-      final queue = await ref.read(syncQueueProvider.notifier).snapshot();
-      if (queue.isEmpty || !mounted) return;
-
-      try {
-        await ref.read(dashboardRefreshProvider.notifier).performSync(const []);
-        if (!mounted) return;
-        final l10n = context.l10n;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${l10n.t('autoSyncCompleted')} (${queue.length})'),
-          ),
-        );
-      } catch (_) {
-        // Échec silencieux — l'utilisateur peut re-synchroniser manuellement
-      }
+      if (!mounted) return;
+      await _runBackgroundSync();
     });
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    final dd = dateTime.day.toString().padLeft(2, '0');
-    final mm = dateTime.month.toString().padLeft(2, '0');
-    final yyyy = dateTime.year.toString();
-    final hh = dateTime.hour.toString().padLeft(2, '0');
-    final min = dateTime.minute.toString().padLeft(2, '0');
-    return '$dd/$mm/$yyyy $hh:$min';
   }
 
   @override
@@ -72,9 +56,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(dashboardStatsProvider);
-    final syncAsync = ref.watch(syncStatusProvider);
-    final localSyncQueue = ref.watch(syncQueueProvider);
-    final isSyncing = ref.watch(dashboardRefreshProvider);
+    final refreshState = ref.watch(dashboardRefreshProvider);
+    final hasSyncError = refreshState.hasSyncError;
+    final retryCountdown = refreshState.retryCountdown;
     final isOffline = ref.watch(authStateProvider).isOffline;
     final lockState = ref.watch(appLockProvider);
     final l10n = context.l10n;
@@ -134,6 +118,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 await ref
                     .read(dashboardRefreshProvider.notifier)
                     .refreshStats();
+                await _runBackgroundSync();
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -143,124 +128,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     data: (stats) => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      l10n.t('syncStatusTitle'),
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    ElevatedButton.icon(
-                                      onPressed: isSyncing
-                                          ? null
-                                          : () async {
-                                              try {
-                                                await ref
-                                                    .read(
-                                                      dashboardRefreshProvider
-                                                          .notifier,
-                                                    )
-                                                    .performSync(const []);
-                                                if (!context.mounted) return;
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      '${l10n.t('syncCompleted')} (${localSyncQueue.length})',
-                                                    ),
-                                                  ),
-                                                );
-                                              } catch (e) {
-                                                if (!context.mounted) return;
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      '${l10n.t('syncFailed')}: $e',
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                      icon: isSyncing
-                                          ? const SizedBox(
-                                              width: 14,
-                                              height: 14,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                          : const Icon(Icons.sync, size: 16),
-                                      label: Text(l10n.t('syncNow')),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                syncAsync.when(
-                                  data: (raw) {
-                                    final syncStatus = SyncStatus.fromJson(raw);
-                                    final lastSync = syncStatus.lastSync;
-                                    final lastSyncLabel = lastSync == null
-                                        ? l10n.t('neverSynced')
-                                        : _formatDateTime(
-                                            lastSync.syncStartTime,
-                                          );
-                                    final statusLabel = lastSync == null
-                                        ? l10n.t('unknownStatus')
-                                        : lastSync.status;
-
-                                    return Column(
+                        if (hasSyncError) ...[
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.sync_problem,
+                                    color: Colors.orange,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          '${l10n.t('pendingSyncs')}: ${syncStatus.pendingSyncs}',
+                                          l10n.t('syncFailed'),
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.titleSmall,
                                         ),
-                                        const SizedBox(height: 6),
+                                        const SizedBox(height: 4),
                                         Text(
-                                          '${l10n.t('localPendingSyncs')}: ${localSyncQueue.length}',
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          '${l10n.t('lastSync')}: $lastSyncLabel',
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          '${l10n.t('syncResult')}: $statusLabel',
+                                          retryCountdown > 0
+                                              ? '${l10n.t('autoRetry')} ${retryCountdown}s...'
+                                              : l10n.t('syncing'),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(color: Colors.grey),
                                         ),
                                       ],
-                                    );
-                                  },
-                                  loading: () => const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 6),
-                                    child: SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
                                     ),
                                   ),
-                                  error: (_, _) =>
-                                      Text(l10n.t('syncStatusError')),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
+                          const SizedBox(height: 16),
+                        ],
                         // KPI Cards
                         GridView.count(
                           crossAxisCount: 2,
