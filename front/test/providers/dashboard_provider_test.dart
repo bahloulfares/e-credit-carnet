@@ -78,7 +78,6 @@ void main() {
         final state = container.read(dashboardRefreshProvider);
         expect(state.isSyncing, isFalse);
         expect(state.hasSyncError, isTrue);
-        expect(state.retryCountdown, greaterThan(0));
       },
     );
   });

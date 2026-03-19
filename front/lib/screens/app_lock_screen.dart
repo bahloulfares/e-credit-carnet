@@ -55,14 +55,20 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
       final l10n = context.l10n;
       setState(() {
         _pin = '';
-        _error = l10n.t('pinAuthFailed');
-        if (lockState.isTemporarilyBlocked) _startCountdown();
+        if (lockState.isTemporarilyBlocked) {
+          _error = '${l10n.t('pinBlocked')} ${lockState.secondsRemaining}s';
+          _startCountdown();
+        } else {
+          _error = l10n.t('pinWrong');
+        }
       });
     }
   }
 
   Future<void> _unlockWithBiometric() async {
     if (_isBiometricBusy) return;
+    final lockState = ref.read(appLockProvider);
+    if (!lockState.biometricsEnabled) return;
     final l10n = context.l10n;
     setState(() {
       _error = null;
@@ -103,6 +109,10 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
       if (remaining <= 0) {
         _countdownTimer?.cancel();
         setState(() => _error = null);
+      } else {
+        setState(
+          () => _error = '${context.l10n.t('pinBlocked')} ${remaining}s',
+        );
       }
     });
   }
@@ -158,18 +168,19 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
                     disabled: lockState.isTemporarilyBlocked,
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: _isBiometricBusy ? null : _unlockWithBiometric,
-                    icon: _isBiometricBusy
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.fingerprint),
-                    label: Text(l10n.t('useBiometric')),
-                  ),
-                  const SizedBox(height: 16),
+                  if (lockState.biometricsEnabled)
+                    OutlinedButton.icon(
+                      onPressed: _isBiometricBusy ? null : _unlockWithBiometric,
+                      icon: _isBiometricBusy
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.fingerprint),
+                      label: Text(l10n.t('useBiometric')),
+                    ),
+                  if (lockState.biometricsEnabled) const SizedBox(height: 16),
                   TextButton(
                     onPressed: _logout,
                     child: Text(

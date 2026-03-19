@@ -32,6 +32,7 @@ class SecureAppLockStorage implements AppLockStorage {
 class AppLockState {
   final bool isLocked;
   final bool hasPinSet;
+  final bool biometricsEnabled;
   final int failedAttempts;
   final DateTime? lockedUntil;
   final int lockoutLevel;
@@ -40,6 +41,7 @@ class AppLockState {
   const AppLockState({
     this.isLocked = false,
     this.hasPinSet = false,
+    this.biometricsEnabled = true,
     this.failedAttempts = 0,
     this.lockedUntil,
     this.lockoutLevel = 0,
@@ -58,6 +60,7 @@ class AppLockState {
   AppLockState copyWith({
     bool? isLocked,
     bool? hasPinSet,
+    bool? biometricsEnabled,
     int? failedAttempts,
     DateTime? lockedUntil,
     int? lockoutLevel,
@@ -67,6 +70,7 @@ class AppLockState {
     return AppLockState(
       isLocked: isLocked ?? this.isLocked,
       hasPinSet: hasPinSet ?? this.hasPinSet,
+      biometricsEnabled: biometricsEnabled ?? this.biometricsEnabled,
       failedAttempts: failedAttempts ?? this.failedAttempts,
       lockedUntil: clearLockedUntil ? null : (lockedUntil ?? this.lockedUntil),
       lockoutLevel: lockoutLevel ?? this.lockoutLevel,
@@ -77,6 +81,7 @@ class AppLockState {
 
 class AppLockNotifier extends StateNotifier<AppLockState> {
   static const _pinKey = 'app_lock_pin';
+  static const _biometricEnabledKey = 'app_lock_biometrics_enabled';
   static const _maxAttempts = 3;
   static const _baseBlockDuration = Duration(seconds: 30);
   static const _maxBlockDuration = Duration(seconds: 120);
@@ -98,8 +103,16 @@ class AppLockNotifier extends StateNotifier<AppLockState> {
 
   Future<void> _initialize() async {
     final pin = await _storage.read(key: _pinKey);
+    final biometricsRaw = await _storage.read(key: _biometricEnabledKey);
+    final biometricsEnabled = biometricsRaw != 'false';
     if (pin != null) {
-      state = const AppLockState(hasPinSet: true, isLocked: true);
+      state = AppLockState(
+        hasPinSet: true,
+        isLocked: true,
+        biometricsEnabled: biometricsEnabled,
+      );
+    } else {
+      state = state.copyWith(biometricsEnabled: biometricsEnabled);
     }
   }
 
@@ -256,7 +269,7 @@ class AppLockNotifier extends StateNotifier<AppLockState> {
 
   Future<bool> unlockWithBiometrics() async {
     await _ready;
-    if (!state.hasPinSet) return false;
+    if (!state.hasPinSet || !state.biometricsEnabled) return false;
     state = state.copyWith(
       isLocked: false,
       failedAttempts: 0,
@@ -314,6 +327,15 @@ class AppLockNotifier extends StateNotifier<AppLockState> {
         clearLockedUntil: true,
       );
     }
+  }
+
+  Future<void> setBiometricsEnabled(bool enabled) async {
+    await _ready;
+    await _storage.write(
+      key: _biometricEnabledKey,
+      value: enabled ? 'true' : 'false',
+    );
+    state = state.copyWith(biometricsEnabled: enabled);
   }
 
   /// Réinitialise uniquement le verrouillage de session.

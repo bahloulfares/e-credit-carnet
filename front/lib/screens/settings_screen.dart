@@ -108,6 +108,18 @@ class _PinManagementCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: lockState.biometricsEnabled,
+                onChanged: (value) {
+                  ref
+                      .read(appLockProvider.notifier)
+                      .setBiometricsEnabled(value);
+                },
+                title: Text(l10n.t('useBiometric')),
+                subtitle: Text(l10n.t('biometricSettingHint')),
+              ),
+              const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(

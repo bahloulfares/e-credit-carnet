@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -57,6 +58,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = context.l10n;
     final notifier = ref.read(authStateProvider.notifier);
     try {
       await notifier.updateProfile(
@@ -76,32 +78,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             : _shopPhoneController.text.trim(),
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil mis a jour avec succes')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('profileUpdatedSuccess'))));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      ).showSnackBar(SnackBar(content: Text('${l10n.t('error')}: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final l10n = context.l10n;
     final user = authState.user;
     _initFromUser(authState);
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Profile'), centerTitle: true),
-        body: const Center(child: Text('Utilisateur non connecte')),
+        appBar: AppBar(title: Text(l10n.t('myProfile')), centerTitle: true),
+        body: Center(child: Text(l10n.t('userNotConnected'))),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile'), centerTitle: true),
+      appBar: AppBar(title: Text(l10n.t('myProfile')), centerTitle: true),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -126,9 +129,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         const SizedBox(height: 8),
                         Text(user.email),
                         const SizedBox(height: 4),
-                        Text('Role: ${user.role}'),
+                        Text('${l10n.t('roleLabel')}: ${user.role}'),
                         const SizedBox(height: 4),
-                        Text('Abonnement: ${user.subscriptionStatus}'),
+                        Text(
+                          '${l10n.t('subscriptionLabel')}: ${user.subscriptionStatus}',
+                        ),
                       ],
                     ),
                   ),
@@ -136,10 +141,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _firstNameController,
-                  decoration: const InputDecoration(labelText: 'First Name *'),
+                  decoration: InputDecoration(labelText: l10n.t('firstName')),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'First name is required';
+                      return l10n.t('firstNameRequired');
                     }
                     return null;
                   },
@@ -147,10 +152,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _lastNameController,
-                  decoration: const InputDecoration(labelText: 'Last Name *'),
+                  decoration: InputDecoration(labelText: l10n.t('lastName')),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Last name is required';
+                      return l10n.t('lastNameRequired');
                     }
                     return null;
                   },
@@ -158,23 +163,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(labelText: 'Phone'),
+                  decoration: InputDecoration(labelText: l10n.t('phone')),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _shopNameController,
-                  decoration: const InputDecoration(labelText: 'Shop Name'),
+                  decoration: InputDecoration(labelText: l10n.t('shopName')),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _shopAddressController,
-                  decoration: const InputDecoration(labelText: 'Shop Address'),
+                  decoration: InputDecoration(labelText: l10n.t('address')),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _shopPhoneController,
-                  decoration: const InputDecoration(labelText: 'Shop Phone'),
+                  decoration: InputDecoration(labelText: l10n.t('phone')),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -188,7 +193,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.save),
-                    label: const Text('Save Profile'),
+                    label: Text(l10n.t('saveProfile')),
                   ),
                 ),
               ],

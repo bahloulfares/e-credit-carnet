@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../constants/app_constants.dart';
 
@@ -43,14 +44,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _register() async {
     final authNotifier = ref.read(authStateProvider.notifier);
+    final l10n = context.l10n;
 
     if (_emailController.text.isEmpty ||
         _firstNameController.text.isEmpty ||
         _lastNameController.text.isEmpty ||
         _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('requiredFields'))));
+      return;
+    }
+
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}');
+    if (!emailRegex.hasMatch(_emailController.text.trim())) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('invalidEmailFormat'))));
       return;
     }
 
@@ -75,7 +85,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Registration failed: $e')));
+        ).showSnackBar(SnackBar(content: Text('${l10n.t('error')}: $e')));
       }
     }
   }
@@ -83,24 +93,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account'), centerTitle: true),
+      appBar: AppBar(title: Text(l10n.t('createAccount')), centerTitle: true),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
               const SizedBox(height: 24),
-              const Text(
-                'Register Your Shop',
+              Text(
+                l10n.t('registerYourShop'),
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 32),
               TextField(
                 controller: _firstNameController,
                 decoration: InputDecoration(
-                  labelText: 'First Name *',
+                  labelText: l10n.t('firstName'),
                   prefixIcon: const Icon(Icons.person),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -112,7 +123,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               TextField(
                 controller: _lastNameController,
                 decoration: InputDecoration(
-                  labelText: 'Last Name *',
+                  labelText: l10n.t('lastName'),
                   prefixIcon: const Icon(Icons.person),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -124,7 +135,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               TextField(
                 controller: _emailController,
                 decoration: InputDecoration(
-                  labelText: 'Email *',
+                  labelText: l10n.t('email'),
                   prefixIcon: const Icon(Icons.email),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -137,7 +148,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               TextField(
                 controller: _passwordController,
                 decoration: InputDecoration(
-                  labelText: 'Password *',
+                  labelText: l10n.t('password'),
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -162,7 +173,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               TextField(
                 controller: _shopNameController,
                 decoration: InputDecoration(
-                  labelText: 'Shop Name',
+                  labelText: l10n.t('shopName'),
                   prefixIcon: const Icon(Icons.store),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -174,7 +185,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               TextField(
                 controller: _phoneController,
                 decoration: InputDecoration(
-                  labelText: 'Phone Number',
+                  labelText: l10n.t('phone'),
                   prefixIcon: const Icon(Icons.phone),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -195,7 +206,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           width: 24,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Register'),
+                      : Text(l10n.t('register')),
                 ),
               ),
               const SizedBox(height: 16),
@@ -207,7 +218,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           context,
                         ).pushReplacementNamed(Routes.login);
                       },
-                child: const Text('Already have an account? Login'),
+                child: Text(l10n.t('alreadyHaveAccountLogin')),
               ),
               if (authState.error != null)
                 Padding(

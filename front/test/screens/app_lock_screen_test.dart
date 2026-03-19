@@ -177,12 +177,9 @@ void main() {
     expect(seconds, greaterThanOrEqualTo(25));
     expect(seconds, lessThanOrEqualTo(30));
 
-    // UI intentionally masks details (no remaining seconds shown).
-    expect(find.textContaining('30s'), findsNothing);
-    expect(
-      find.text('Echec de verification. Reessayez plus tard.'),
-      findsOneWidget,
-    );
+    // UI now displays detailed lockout feedback with a visible countdown.
+    expect(find.textContaining('Trop de tentatives. Attendez'), findsOneWidget);
+    expect(find.textContaining('s'), findsWidgets);
   });
 
   testWidgets('AppLockScreen forces logout after max lockout level', (

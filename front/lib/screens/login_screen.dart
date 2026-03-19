@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../constants/app_constants.dart';
 
@@ -75,6 +76,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(title: const Text('ProCreditApp'), centerTitle: true),
@@ -140,9 +142,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ? null
                       : () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text(
-                                'Contactez votre administrateur pour réinitialiser le mot de passe',
+                                l10n.t('forgotPasswordContactAdmin'),
                               ),
                               duration: Duration(seconds: 4),
                             ),

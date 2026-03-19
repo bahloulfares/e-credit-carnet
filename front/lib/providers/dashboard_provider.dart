@@ -34,22 +34,30 @@ class DashboardRefreshState {
   final bool isSyncing;
   final bool hasSyncError;
   final int retryCountdown;
+  final int serverPendingSyncs;
+  final DateTime? lastServerSyncAt;
 
   const DashboardRefreshState({
     this.isSyncing = false,
     this.hasSyncError = false,
     this.retryCountdown = 0,
+    this.serverPendingSyncs = 0,
+    this.lastServerSyncAt,
   });
 
   DashboardRefreshState copyWith({
     bool? isSyncing,
     bool? hasSyncError,
     int? retryCountdown,
+    int? serverPendingSyncs,
+    DateTime? lastServerSyncAt,
   }) {
     return DashboardRefreshState(
       isSyncing: isSyncing ?? this.isSyncing,
       hasSyncError: hasSyncError ?? this.hasSyncError,
       retryCountdown: retryCountdown ?? this.retryCountdown,
+      serverPendingSyncs: serverPendingSyncs ?? this.serverPendingSyncs,
+      lastServerSyncAt: lastServerSyncAt ?? this.lastServerSyncAt,
     );
   }
 }
@@ -81,6 +89,7 @@ class DashboardRefreshNotifier extends StateNotifier<DashboardRefreshState> {
       // Invalidate the provider to refetch data
       ref.invalidate(dashboardStatsProvider);
       ref.invalidate(syncStatusProvider);
+      await _refreshSyncSignalsSilently();
     } catch (e) {
       // Handle error silently, providers will handle it
     } finally {
@@ -122,30 +131,38 @@ class DashboardRefreshNotifier extends StateNotifier<DashboardRefreshState> {
       // Refresh stats after sync
       ref.invalidate(dashboardStatsProvider);
       ref.invalidate(syncStatusProvider);
+      await _refreshSyncSignalsSilently();
       return result;
     } catch (e) {
       _autoRetryAttempt += 1;
       state = state.copyWith(hasSyncError: true);
-      startRetryCountdown();
+      await _refreshSyncSignalsSilently();
+      _scheduleAutoRetry();
       rethrow;
     } finally {
       state = state.copyWith(isSyncing: false);
     }
   }
 
-  void startRetryCountdown() {
+  void _scheduleAutoRetry() {
     _retryCountdownTimer?.cancel();
     final delaySeconds = _computeRetryDelaySeconds();
     state = state.copyWith(retryCountdown: delaySeconds);
 
-    _retryCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _retryCountdownTimer = Timer.periodic(const Duration(seconds: 1), (
+      timer,
+    ) async {
       if (state.retryCountdown > 1) {
         state = state.copyWith(retryCountdown: state.retryCountdown - 1);
-      } else {
-        timer.cancel();
-        state = state.copyWith(retryCountdown: 0);
-        // Auto-retry silencieusement après 5s
-        _performAutoRetry();
+        return;
+      }
+
+      timer.cancel();
+      state = state.copyWith(retryCountdown: 0);
+      try {
+        await performSync(const []);
+      } catch (_) {
+        // L'echec est deja gere par performSync (nouvelle planification).
       }
     });
   }
@@ -155,11 +172,27 @@ class DashboardRefreshNotifier extends StateNotifier<DashboardRefreshState> {
     return (5 * (1 << exponent)).clamp(5, 60);
   }
 
-  Future<void> _performAutoRetry() async {
+  Future<void> _refreshSyncSignalsSilently() async {
     try {
-      await performSync(const []);
+      final raw = await dashboardService.getSyncStatus();
+      final sourceRaw = raw['syncStatus'] ?? raw;
+      if (sourceRaw is! Map) {
+        return;
+      }
+
+      final source = Map<String, dynamic>.from(sourceRaw);
+
+      final syncStatus = SyncStatus.fromJson(source);
+      final lastServerSyncAt =
+          syncStatus.lastSync?.syncEndTime ??
+          syncStatus.lastSync?.syncStartTime;
+
+      state = state.copyWith(
+        serverPendingSyncs: syncStatus.pendingSyncs,
+        lastServerSyncAt: lastServerSyncAt,
+      );
     } catch (_) {
-      // L'échec est déjà géré par performSync (nouveau countdown).
+      // Keep sync status handling fully automatic and silent.
     }
   }
 
