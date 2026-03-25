@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
+import '../models/client_model.dart';
 import '../providers/client_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/dashboard_provider.dart';
@@ -27,6 +28,15 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
         title: Text(l10n.t('clientDetails')),
         centerTitle: true,
         actions: [
+          clientAsync.when(
+            data: (client) => IconButton(
+              tooltip: l10n.t('editClient'),
+              icon: const Icon(Icons.edit),
+              onPressed: () => _showEditClientDialog(client),
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
+          ),
           clientAsync.when(
             data: (client) => IconButton(
               tooltip: client.isActive
@@ -216,6 +226,174 @@ class _ClientDetailsScreenState extends ConsumerState<ClientDetailsScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('${l10n.t('error')}: $e')));
+    }
+  }
+
+  Future<void> _showEditClientDialog(Client client) async {
+    final l10n = context.l10n;
+    final formKey = GlobalKey<FormState>();
+    final firstNameController = TextEditingController(text: client.firstName);
+    final lastNameController = TextEditingController(text: client.lastName);
+    final phoneController = TextEditingController(text: client.phone ?? '');
+    final emailController = TextEditingController(text: client.email ?? '');
+    final addressController = TextEditingController(text: client.address ?? '');
+    bool isSubmitting = false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (localContext, setDialogState) {
+            return AlertDialog(
+              title: Text(l10n.t('editClient')),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: firstNameController,
+                        decoration: InputDecoration(
+                          labelText: l10n.t('firstName'),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return l10n.t('firstNameRequired');
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: lastNameController,
+                        decoration: InputDecoration(
+                          labelText: l10n.t('lastName'),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return l10n.t('lastNameRequired');
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: phoneController,
+                        decoration: InputDecoration(labelText: l10n.t('phone')),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: emailController,
+                        decoration: InputDecoration(labelText: l10n.t('email')),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          final text = value?.trim() ?? '';
+                          if (text.isEmpty) return null;
+                          final emailRegex = RegExp(
+                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}',
+                          );
+                          if (!emailRegex.hasMatch(text)) {
+                            return l10n.t('invalidEmailFormat');
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: addressController,
+                        decoration: InputDecoration(
+                          labelText: l10n.t('address'),
+                        ),
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(false),
+                  child: Text(l10n.t('cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) {
+                            return;
+                          }
+
+                          setDialogState(() {
+                            isSubmitting = true;
+                          });
+
+                          try {
+                            await ref
+                                .read(clientListProvider.notifier)
+                                .updateClient(
+                                  client.id,
+                                  firstName: firstNameController.text.trim(),
+                                  lastName: lastNameController.text.trim(),
+                                  phone: phoneController.text.trim().isEmpty
+                                      ? null
+                                      : phoneController.text.trim(),
+                                  email: emailController.text.trim().isEmpty
+                                      ? null
+                                      : emailController.text.trim(),
+                                  address: addressController.text.trim().isEmpty
+                                      ? null
+                                      : addressController.text.trim(),
+                                );
+
+                            if (dialogContext.mounted) {
+                              Navigator.of(dialogContext).pop(true);
+                            }
+                          } catch (_) {
+                            setDialogState(() {
+                              isSubmitting = false;
+                            });
+                            if (!dialogContext.mounted) return;
+                            ScaffoldMessenger.of(dialogContext).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.t('updateClientError')),
+                              ),
+                            );
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(l10n.t('save')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    firstNameController.dispose();
+    lastNameController.dispose();
+    phoneController.dispose();
+    emailController.dispose();
+    addressController.dispose();
+
+    if (result == true && mounted) {
+      ref.invalidate(clientDetailsProvider(widget.clientId));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('clientUpdated'))));
     }
   }
 
